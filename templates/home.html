@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; padding: 4rem 0;">
+    <h1 style="font-size: 3rem; margin-bottom: 1rem; color: #003057;">Welcome to StudyIt</h1>
+    <p style="font-size: 1.25rem; color: #666; margin-bottom: 2rem;">
+        Never study alone again. Find study buddies across Georgia Tech campus.
+    </p>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+        <a href="#" style="background: #003057; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Get Started
+        </a>
+        <a href="#" style="background: #B3A369; color: white; padding: 1rem 2rem; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Learn More
+        </a>
+    </div>
+
+    <div style="margin-top: 4rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div style="padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+            <h3 style="color: #003057; margin-bottom: 1rem;">📍 Location-Based</h3>
+            <p style="color: #666;">Find students studying in the same campus location as you.</p>
+        </div>
+        <div style="padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+            <h3 style="color: #003057; margin-bottom: 1rem;">💬 Real-Time Chat</h3>
+            <p style="color: #666;">Connect instantly with study buddies through chat and calls.</p>
+        </div>
+        <div style="padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+            <h3 style="color: #003057; margin-bottom: 1rem;">📚 Study Sessions</h3>
+            <p style="color: #666;">Join TA-hosted sessions or create your own study groups.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
