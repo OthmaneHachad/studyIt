@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",  # Must be before django.contrib.staticfiles for Channels
+    # "daphne",  # Temporarily disabled - use for WebSocket features only
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -79,7 +79,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "studyit_project.wsgi.application"
-ASGI_APPLICATION = "studyit_project.asgi.application"
+# ASGI_APPLICATION = "studyit_project.asgi.application"  # Temporarily disabled - enable when WebSocket features are needed
 
 
 # Database
@@ -153,7 +153,7 @@ CHANNEL_LAYERS = {
 CORS_ALLOW_ALL_ORIGINS = True  # Change in production
 
 # Authentication
-LOGIN_URL = "login"
+LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 

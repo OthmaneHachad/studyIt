@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - StudyIt{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #003057;">My Profile</h1>
+        <a href="{% url 'accounts:profile_edit' %}" style="background: #003057; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 5px; font-weight: 500;">
+            Edit Profile
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="margin-bottom: 1.5rem;">
+            <h2 style="color: #003057; margin-bottom: 0.5rem;">{{ profile.name }}</h2>
+            <p style="color: #666; font-size: 1.1rem;">{{ profile.get_year_display }}</p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem;">
+            <h3 style="color: #333; margin-bottom: 1rem;">Profile Information</h3>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <strong style="color: #003057;">Expertise Level:</strong>
+                    <span style="color: #666; margin-left: 0.5rem;">{{ profile.get_expertise_level_display }}</span>
+                </div>
+                
+                <div>
+                    <strong style="color: #003057;">Classes:</strong>
+                    {% if profile.classes.all %}
+                        <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            {% for class in profile.classes.all %}
+                                <span style="background: #f8f9fa; padding: 0.25rem 0.75rem; border-radius: 15px; color: #003057; font-size: 0.9rem;">
+                                    {{ class.code }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span style="color: #999; margin-left: 0.5rem; font-style: italic;">No classes added yet</span>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <strong style="color: #003057;">Location Privacy:</strong>
+                    <span style="color: #666; margin-left: 0.5rem;">
+                        {% if profile.location_privacy %}
+                            🔒 Hidden from others
+                        {% else %}
+                            🌍 Visible to others
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if profile.current_location %}
+                    <div>
+                        <strong style="color: #003057;">Current Location:</strong>
+                        <span style="color: #666; margin-left: 0.5rem;">{{ profile.current_location.name }}</span>
+                    </div>
+                {% else %}
+                    <div>
+                        <strong style="color: #003057;">Current Location:</strong>
+                        <span style="color: #999; margin-left: 0.5rem; font-style: italic;">Not set</span>
+                    </div>
+                {% endif %}
+                
+                <div>
+                    <strong style="color: #003057;">Status:</strong>
+                    <span style="color: #666; margin-left: 0.5rem;">
+                        {% if profile.is_active %}
+                            ✅ Active
+                        {% else %}
+                            ⏸️ Inactive
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem; color: #999; font-size: 0.875rem;">
+            <p>Profile created: {{ profile.created_at|date:"F d, Y" }}</p>
+            <p>Last updated: {{ profile.updated_at|date:"F d, Y" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

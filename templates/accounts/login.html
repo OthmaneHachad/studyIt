@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Login - StudyIt{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+    <h2 style="color: #003057; margin-bottom: 1.5rem; text-align: center;">Login to StudyIt</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" style="display: flex; flex-direction: column; gap: 1rem;">
+        {% csrf_token %}
+        
+        <div>
+            <label for="id_username" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.username.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <label for="id_password" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Password</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.password.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" style="background: #003057; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 0.5rem;">
+            Login
+        </button>
+    </form>
+    
+    <div style="margin-top: 1.5rem; text-align: center; color: #666;">
+        <p>Don't have an account? <a href="{% url 'accounts:signup' %}" style="color: #003057; text-decoration: none; font-weight: 500;">Sign up here</a></p>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #003057;
+        box-shadow: 0 0 0 3px rgba(0, 48, 87, 0.1);
+    }
+</style>
+{% endblock %}
+

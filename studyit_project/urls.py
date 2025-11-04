@@ -6,13 +6,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
+from django.shortcuts import render
+
+def home_view(request):
+    """Simple home view compatible with ASGI"""
+    return render(request, "home.html")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", TemplateView.as_view(template_name="home.html"), name="home"),
+    path("", home_view, name="home"),
+    path("accounts/", include("accounts.urls")),
     # App URLs will be included here as they're developed
-    # path("accounts/", include("accounts.urls")),
     # path("locations/", include("locations.urls")),
     # path("sessions/", include("study_sessions.urls")),
     # path("chat/", include("chat.urls")),

@@ -1,3 +1,16 @@
 from django.db import models
 
-# Create your models here.
+class Location(models.Model):
+    """Model for campus locations where students can study"""
+    name = models.CharField(max_length=200, unique=True)
+    building_name = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name

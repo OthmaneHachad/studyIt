@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Students - StudyIt{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto;">
+    <h1 style="color: #003057; margin-bottom: 2rem;">Browse Student Profiles</h1>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% if profiles %}
+            <div style="display: grid; gap: 1.5rem;">
+                {% for profile in profiles %}
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 1.5rem; background: #f8f9fa;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <h3 style="color: #003057; margin-bottom: 0.5rem;">
+                                    <a href="{% url 'accounts:profile_detail' profile.user.id %}" style="color: #003057; text-decoration: none;">
+                                        {{ profile.name }}
+                                    </a>
+                                </h3>
+                                <p style="color: #666; margin-bottom: 0.75rem;">{{ profile.get_year_display }} • {{ profile.get_expertise_level_display }}</p>
+                                
+                                {% if profile.classes.all %}
+                                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                        {% for class in profile.classes.all|slice:":5" %}
+                                            <span style="background: white; padding: 0.25rem 0.75rem; border-radius: 15px; color: #003057; font-size: 0.875rem; border: 1px solid #ddd;">
+                                                {{ class.code }}
+                                            </span>
+                                        {% endfor %}
+                                        {% if profile.classes.count > 5 %}
+                                            <span style="color: #999; font-size: 0.875rem;">+{{ profile.classes.count|add:"-5" }} more</span>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                
+                                {% if profile.current_location and not profile.location_privacy %}
+                                    <p style="color: #666; font-size: 0.9rem;">
+                                        📍 Currently at: {{ profile.current_location.name }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <a href="{% url 'accounts:profile_detail' profile.user.id %}" style="background: #003057; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 5px; font-size: 0.9rem; display: inline-block;">
+                                    View Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666; text-align: center; padding: 2rem;">No student profiles found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
