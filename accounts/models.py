@@ -7,6 +7,9 @@ class Class(models.Model):
     code = models.CharField(max_length=20, unique=True, help_text="e.g., CS2340")
     name = models.CharField(max_length=200)
     department = models.CharField(max_length=100, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_classes', help_text="User who created this class (null if admin-created)")
+    is_official = models.BooleanField(default=False, help_text="True if created by admin, False if user-created")
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     
     class Meta:
         verbose_name_plural = "Classes"
@@ -14,6 +17,26 @@ class Class(models.Model):
     
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+class StudentClass(models.Model):
+    """Through model for StudentProfile-Class relationship with expertise level"""
+    EXPERTISE_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+    
+    student = models.ForeignKey('StudentProfile', on_delete=models.CASCADE, related_name='student_classes')
+    course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='student_enrollments')
+    expertise_level = models.CharField(max_length=20, choices=EXPERTISE_CHOICES, default='beginner')
+    added_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['student', 'course']
+        ordering = ['course__code']
+    
+    def __str__(self):
+        return f"{self.student.name} - {self.course.code} ({self.get_expertise_level_display()})"
 
 class StudentProfile(models.Model):
     """Profile model for Student users"""
@@ -25,17 +48,10 @@ class StudentProfile(models.Model):
         ('graduate', 'Graduate'),
     ]
     
-    EXPERTISE_CHOICES = [
-        ('beginner', 'Beginner'),
-        ('intermediate', 'Intermediate'),
-        ('advanced', 'Advanced'),
-    ]
-    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     name = models.CharField(max_length=200, help_text="Your full name")
     year = models.CharField(max_length=20, choices=YEAR_CHOICES)
-    classes = models.ManyToManyField(Class, related_name='students', blank=True)
-    expertise_level = models.CharField(max_length=20, choices=EXPERTISE_CHOICES, default='beginner')
+    classes = models.ManyToManyField(Class, through='StudentClass', related_name='students', blank=True)
     location_privacy = models.BooleanField(default=False, help_text="Hide your location from others")
     current_location = models.ForeignKey('locations.Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
     is_active = models.BooleanField(default=True, help_text="Currently using StudyIt")
@@ -50,7 +66,7 @@ class StudentProfile(models.Model):
     
     def get_classes_display(self):
         """Return comma-separated list of class codes"""
-        return ", ".join([cls.code for cls in self.classes.all()])
+        return ", ".join([sc.course.code for sc in self.student_classes.all()])
 
 class TAProfile(models.Model):
     """Profile model for TA/Session Host users"""

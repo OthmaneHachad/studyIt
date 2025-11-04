@@ -32,17 +32,12 @@
             
             <div style="display: grid; gap: 1rem;">
                 <div>
-                    <strong style="color: #003057;">Expertise Level:</strong>
-                    <span style="color: #666; margin-left: 0.5rem;">{{ profile.get_expertise_level_display }}</span>
-                </div>
-                
-                <div>
                     <strong style="color: #003057;">Classes:</strong>
-                    {% if profile.classes.all %}
+                    {% if profile.student_classes.all %}
                         <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            {% for class in profile.classes.all %}
-                                <span style="background: #f8f9fa; padding: 0.25rem 0.75rem; border-radius: 15px; color: #003057; font-size: 0.9rem;">
-                                    {{ class.code }}
+                            {% for student_class in profile.student_classes.all %}
+                                <span style="background: #f8f9fa; padding: 0.5rem 1rem; border-radius: 15px; color: #003057; font-size: 0.9rem; border: 1px solid #ddd;">
+                                    <strong>{{ student_class.course.code }}</strong> - {{ student_class.get_expertise_level_display }}
                                 </span>
                             {% endfor %}
                         </div>

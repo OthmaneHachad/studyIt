@@ -18,17 +18,17 @@
                                         {{ profile.name }}
                                     </a>
                                 </h3>
-                                <p style="color: #666; margin-bottom: 0.75rem;">{{ profile.get_year_display }} • {{ profile.get_expertise_level_display }}</p>
+                                <p style="color: #666; margin-bottom: 0.75rem;">{{ profile.get_year_display }}</p>
                                 
-                                {% if profile.classes.all %}
+                                {% if profile.student_classes.all %}
                                     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
-                                        {% for class in profile.classes.all|slice:":5" %}
+                                        {% for student_class in profile.student_classes.all|slice:":5" %}
                                             <span style="background: white; padding: 0.25rem 0.75rem; border-radius: 15px; color: #003057; font-size: 0.875rem; border: 1px solid #ddd;">
-                                                {{ class.code }}
+                                                <strong>{{ student_class.course.code }}</strong> ({{ student_class.get_expertise_level_display }})
                                             </span>
                                         {% endfor %}
-                                        {% if profile.classes.count > 5 %}
-                                            <span style="color: #999; font-size: 0.875rem;">+{{ profile.classes.count|add:"-5" }} more</span>
+                                        {% if profile.student_classes.count > 5 %}
+                                            <span style="color: #999; font-size: 0.875rem;">+{{ profile.student_classes.count|add:"-5" }} more</span>
                                         {% endif %}
                                     </div>
                                 {% endif %}

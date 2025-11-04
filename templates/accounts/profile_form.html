@@ -3,7 +3,7 @@
 {% block title %}{{ title }} - StudyIt{% endblock %}
 
 {% block content %}
-<div style="max-width: 600px; margin: 2rem auto; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+<div style="max-width: 700px; margin: 2rem auto;">
     <h2 style="color: #003057; margin-bottom: 1.5rem; text-align: center;">{{ title }}</h2>
     
     {% if messages %}
@@ -14,74 +14,121 @@
         {% endfor %}
     {% endif %}
     
-    <form method="post" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        {% csrf_token %}
-        
-        <div>
-            <label for="id_name" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Full Name *</label>
-            {{ form.name }}
-            {% if form.name.errors %}
-                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div>
-            <label for="id_year" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Year *</label>
-            {{ form.year }}
-            {% if form.year.errors %}
-                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.year.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div>
-            <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Classes</label>
-            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 1rem; background: white;">
-                {% for checkbox in form.classes %}
-                    <div style="margin-bottom: 0.5rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            {{ checkbox.tag }}
-                            <span>{{ checkbox.choice_label }}</span>
-                        </label>
-                    </div>
-                {% empty %}
-                    <p style="color: #666; font-style: italic;">No classes available. Please add classes in the admin panel.</p>
-                {% endfor %}
+    <div style="background: #f8f9fa; padding: 2rem; border-radius: 10px; margin-bottom: 2rem;">
+        <form method="post" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% csrf_token %}
+            
+            <div>
+                <label for="id_name" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Full Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>
+                {% endif %}
             </div>
-            {% if form.classes.help_text %}
-                <div style="color: #666; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.classes.help_text }}</div>
-            {% endif %}
-            {% if form.classes.errors %}
-                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.classes.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div>
-            <label for="id_expertise_level" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Expertise Level *</label>
-            {{ form.expertise_level }}
-            {% if form.expertise_level.errors %}
-                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.expertise_level.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div>
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                {{ form.location_privacy }}
-                <span style="color: #333; font-weight: 500;">Hide my location from others</span>
-            </label>
-            {% if form.location_privacy.help_text %}
-                <div style="color: #666; font-size: 0.875rem; margin-top: 0.25rem; margin-left: 1.75rem;">{{ form.location_privacy.help_text }}</div>
-            {% endif %}
-            {% if form.location_privacy.errors %}
-                <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.location_privacy.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <button type="submit" style="background: #003057; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 0.5rem;">
-            {{ submit_text }}
-        </button>
-    </form>
+            
+            <div>
+                <label for="id_year" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">Year *</label>
+                {{ form.year }}
+                {% if form.year.errors %}
+                    <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.year.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    {{ form.location_privacy }}
+                    <span style="color: #333; font-weight: 500;">Hide my location from others</span>
+                </label>
+                {% if form.location_privacy.help_text %}
+                    <div style="color: #666; font-size: 0.875rem; margin-top: 0.25rem; margin-left: 1.75rem;">{{ form.location_privacy.help_text }}</div>
+                {% endif %}
+                {% if form.location_privacy.errors %}
+                    <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;">{{ form.location_privacy.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <button type="submit" style="background: #003057; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 0.5rem;">
+                {{ submit_text }}
+            </button>
+        </form>
+    </div>
     
     {% if profile %}
+        <!-- Classes Management Section -->
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="color: #003057; margin-bottom: 1rem;">My Classes</h3>
+            
+            <!-- Current Classes List -->
+            {% if student_classes %}
+                <div style="margin-bottom: 1.5rem;">
+                    {% for student_class in student_classes %}
+                        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #003057;">{{ student_class.course.code }}</strong>
+                                {% if student_class.course.name %}<span style="color: #666; margin-left: 0.5rem;">- {{ student_class.course.name }}</span>{% endif %}
+                                <div style="margin-top: 0.25rem;">
+                                    <span style="color: #666; font-size: 0.9rem;">Expertise: {{ student_class.get_expertise_level_display }}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select class="expertise-select" data-class-id="{{ student_class.id }}" style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; border-radius: 5px;">
+                                    <option value="beginner" {% if student_class.expertise_level == 'beginner' %}selected{% endif %}>Beginner</option>
+                                    <option value="intermediate" {% if student_class.expertise_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+                                    <option value="advanced" {% if student_class.expertise_level == 'advanced' %}selected{% endif %}>Advanced</option>
+                                </select>
+                                <a href="{% url 'accounts:remove_class' student_class.id %}" style="background: #dc3545; color: white; padding: 0.25rem 0.75rem; text-decoration: none; border-radius: 5px; font-size: 0.875rem;" onclick="return confirm('Remove this class?');">Remove</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: #666; font-style: italic; margin-bottom: 1.5rem;">No classes added yet. Add your first class below!</p>
+            {% endif %}
+            
+            <!-- Add New Class Form -->
+            <div style="border-top: 2px solid #003057; padding-top: 1.5rem;">
+                <h4 style="color: #003057; margin-bottom: 1rem;">Add New Class</h4>
+                
+                <!-- Class Search/Select Dropdown -->
+                <div style="margin-bottom: 1rem; position: relative;">
+                    <label style="display: block; margin-bottom: 0.25rem; color: #333; font-size: 0.9rem; font-weight: 500;">Search Existing Classes or Add New *</label>
+                    <div style="position: relative;">
+                        <input type="text" id="class-search" class="form-control" placeholder="Type to search classes (e.g., CS2340) or enter new class code..." autocomplete="off" style="text-transform: uppercase;">
+                        <div id="class-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 5px; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;">
+                            <!-- Search results will be inserted here -->
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #666;">
+                        <span id="selected-class-info" style="display: none;"></span>
+                        <span id="new-class-info" style="display: none; color: #003057; font-weight: 500;">✓ Will create new class</span>
+                    </div>
+                </div>
+                
+                <form id="add-class-form" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 0.75rem; align-items: end;">
+                    {% csrf_token %}
+                    <input type="hidden" id="selected-class-id" name="selected_class_id" value="">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.25rem; color: #333; font-size: 0.9rem; font-weight: 500;">Class Code *</label>
+                        <input type="text" id="course-code" name="course_code" class="form-control" placeholder="e.g., CS2340" required style="text-transform: uppercase;" readonly>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.25rem; color: #333; font-size: 0.9rem; font-weight: 500;">Expertise *</label>
+                        <select id="expertise-level" name="expertise_level" class="form-control" required>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" style="background: #003057; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                            Add Class
+                        </button>
+                    </div>
+                </form>
+                <div id="add-class-message" style="margin-top: 0.75rem;"></div>
+            </div>
+        </div>
+        
         <div style="margin-top: 1.5rem; text-align: center;">
             <a href="{% url 'accounts:profile' %}" style="color: #003057; text-decoration: none;">← Back to Profile</a>
         </div>
@@ -102,10 +149,195 @@
         border-color: #003057;
         box-shadow: 0 0 0 3px rgba(0, 48, 87, 0.1);
     }
-    
-    .form-check-input {
-        margin-right: 0.5rem;
-    }
 </style>
-{% endblock %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSearch = document.getElementById('class-search');
+    const classDropdown = document.getElementById('class-dropdown');
+    const courseCodeInput = document.getElementById('course-code');
+    const selectedClassId = document.getElementById('selected-class-id');
+    const selectedClassInfo = document.getElementById('selected-class-info');
+    const newClassInfo = document.getElementById('new-class-info');
+    let searchTimeout = null;
+    
+    // Class search functionality
+    if (classSearch) {
+        classSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                classDropdown.style.display = 'none';
+                selectedClassId.value = '';
+                selectedClassInfo.style.display = 'none';
+                newClassInfo.style.display = 'none';
+                courseCodeInput.readOnly = false;
+                courseCodeInput.value = query.toUpperCase();
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                fetch(`{% url 'accounts:search_classes' %}?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displaySearchResults(data.classes, query);
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                    });
+            }, 300);
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!classSearch.contains(e.target) && !classDropdown.contains(e.target)) {
+                classDropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    function displaySearchResults(classes, query) {
+        if (classes.length === 0) {
+            // No results - allow creating new class
+            classDropdown.style.display = 'none';
+            selectedClassId.value = '';
+            selectedClassInfo.style.display = 'none';
+            newClassInfo.style.display = 'block';
+            courseCodeInput.readOnly = false;
+            courseCodeInput.value = query.toUpperCase();
+            return;
+        }
+        
+        // Show dropdown with results
+        let html = '';
+        classes.forEach(cls => {
+            const officialBadge = cls.is_official ? '<span style="background: #003057; color: white; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">Official</span>' : '';
+            html += `
+                <div class="class-option" data-class-id="${cls.id}" data-code="${cls.code}" data-name="${cls.name}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #eee;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                    <strong style="color: #003057;">${cls.code}</strong> ${officialBadge}
+                    ${cls.name ? '<div style="color: #666; font-size: 0.875rem; margin-top: 0.25rem;">' + cls.name + '</div>' : ''}
+                    ${cls.department ? '<div style="color: #999; font-size: 0.8rem; margin-top: 0.1rem;">' + cls.department + '</div>' : ''}
+                </div>
+            `;
+        });
+        
+        // Add option to create new class
+        html += `
+            <div class="class-option" data-action="new" style="padding: 0.75rem; cursor: pointer; background: #f8f9fa; border-top: 2px solid #003057; font-weight: 500; color: #003057;" onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='#f8f9fa'">
+                + Create new class: ${query.toUpperCase()}
+            </div>
+        `;
+        
+        classDropdown.innerHTML = html;
+        classDropdown.style.display = 'block';
+        
+        // Add click handlers
+        classDropdown.querySelectorAll('.class-option').forEach(option => {
+            option.addEventListener('click', function() {
+                if (this.dataset.action === 'new') {
+                    // Create new class
+                    selectedClassId.value = '';
+                    selectedClassInfo.style.display = 'none';
+                    newClassInfo.style.display = 'block';
+                    courseCodeInput.readOnly = false;
+                    courseCodeInput.value = query.toUpperCase();
+                    classSearch.value = query.toUpperCase();
+                } else {
+                    // Select existing class
+                    selectedClassId.value = this.dataset.classId;
+                    courseCodeInput.value = this.dataset.code;
+                    courseCodeInput.readOnly = true;
+                    selectedClassInfo.innerHTML = `Selected: <strong>${this.dataset.code}</strong> - ${this.dataset.name || 'No name'}`;
+                    selectedClassInfo.style.display = 'block';
+                    newClassInfo.style.display = 'none';
+                    classSearch.value = this.dataset.code;
+                }
+                classDropdown.style.display = 'none';
+            });
+        });
+    }
+    
+    // Handle adding new class
+    const addClassForm = document.getElementById('add-class-form');
+    if (addClassForm) {
+        addClassForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const messageDiv = document.getElementById('add-class-message');
+            
+            // If a class was selected, we need to send the class ID instead of course_code
+            if (selectedClassId.value) {
+                // Use existing class - need to modify the form to send class_id
+                // For now, we'll use course_code which will match the existing class
+            }
+            
+            fetch('{% url "accounts:add_class" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.innerHTML = '<div style="background: #d4edda; color: #155724; padding: 0.75rem; border-radius: 5px;">' + data.message + '</div>';
+                    addClassForm.reset();
+                    classSearch.value = '';
+                    selectedClassId.value = '';
+                    selectedClassInfo.style.display = 'none';
+                    newClassInfo.style.display = 'none';
+                    courseCodeInput.readOnly = false;
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    messageDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 5px;">Error: ' + (JSON.stringify(data.error) || 'Failed to add class') + '</div>';
+                }
+            })
+            .catch(error => {
+                messageDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 5px;">Error adding class. Please try again.</div>';
+            });
+        });
+    }
+    
+    // Handle expertise level updates
+    const expertiseSelects = document.querySelectorAll('.expertise-select');
+    expertiseSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const classId = this.dataset.classId;
+            const expertiseLevel = this.value;
+            const formData = new FormData();
+            formData.append('expertise_level', expertiseLevel);
+            
+            fetch(`/accounts/profile/update-expertise/${classId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message briefly
+                    const originalValue = this.value;
+                    this.style.background = '#d4edda';
+                    setTimeout(() => {
+                        this.style.background = '';
+                    }, 1000);
+                } else {
+                    alert('Error updating expertise level');
+                    this.value = originalValue;
+                }
+            })
+            .catch(error => {
+                alert('Error updating expertise level');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
