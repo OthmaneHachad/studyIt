@@ -67,6 +67,40 @@ class StudentProfile(models.Model):
     def get_classes_display(self):
         """Return comma-separated list of class codes"""
         return ", ".join([sc.course.code for sc in self.student_classes.all()])
+    
+    def get_shared_classes(self, other_profile):
+        """Get list of classes shared with another student profile"""
+        if not other_profile:
+            return []
+        my_classes = set(self.classes.values_list('code', flat=True))
+        their_classes = set(other_profile.classes.values_list('code', flat=True))
+        return list(my_classes.intersection(their_classes))
+    
+    def get_matching_score(self, other_profile):
+        """Calculate matching score with another student profile"""
+        if not other_profile:
+            return 0
+        
+        score = 0
+        
+        # Shared classes (10 points each)
+        shared_classes = self.get_shared_classes(other_profile)
+        score += len(shared_classes) * 10
+        
+        # Same location (5 points)
+        if (self.current_location and other_profile.current_location and 
+            self.current_location == other_profile.current_location):
+            score += 5
+        
+        # Both available/not hiding location (3 points)
+        if not self.location_privacy and not other_profile.location_privacy:
+            score += 3
+        
+        # Same year (2 points)
+        if self.year == other_profile.year:
+            score += 2
+        
+        return score
 
 class TAProfile(models.Model):
     """Profile model for TA/Session Host users"""

@@ -246,18 +246,109 @@ def profile_detail(request, user_id):
 
 @login_required
 def profile_list(request):
-    """Browse all student profiles"""
-    profiles = StudentProfile.objects.filter(is_active=True).select_related('user', 'current_location')
+    """Browse all student profiles with advanced filtering"""
+    # Get current user's profile for matching logic
+    try:
+        current_profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        current_profile = None
     
-    # Optional: Add filtering by class, year, etc.
-    class_filter = request.GET.get('class')
+    # Base query - active profiles only
+    profiles = StudentProfile.objects.filter(is_active=True).select_related('user', 'current_location').prefetch_related('student_classes__course')
+    
+    # Exclude current user from results
+    if current_profile:
+        profiles = profiles.exclude(id=current_profile.id)
+    
+    # Search by name
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        profiles = profiles.filter(name__icontains=search_query)
+    
+    # Filter by class (support multiple classes)
+    class_filters = request.GET.getlist('class')
+    if class_filters:
+        for class_code in class_filters:
+            profiles = profiles.filter(classes__code=class_code)
+    
+    # Filter by year
     year_filter = request.GET.get('year')
-    
-    if class_filter:
-        profiles = profiles.filter(classes__code=class_filter)
     if year_filter:
         profiles = profiles.filter(year=year_filter)
     
-    return render(request, 'accounts/profile_list.html', {
-        'profiles': profiles.distinct()
-    })
+    # Filter by location
+    location_filter = request.GET.get('location')
+    if location_filter:
+        try:
+            profiles = profiles.filter(current_location_id=int(location_filter))
+        except (ValueError, TypeError):
+            pass
+    
+    # Filter by expertise level
+    expertise_filter = request.GET.get('expertise')
+    if expertise_filter:
+        profiles = profiles.filter(student_classes__expertise_level=expertise_filter)
+    
+    # Filter by availability (only show students who are not hiding location)
+    available_only = request.GET.get('available') == 'true'
+    if available_only:
+        profiles = profiles.filter(location_privacy=False)
+    
+    # Remove duplicates from joins
+    profiles = profiles.distinct()
+    
+    # Sorting
+    sort_by = request.GET.get('sort', 'name')
+    if sort_by == 'name':
+        profiles = profiles.order_by('name')
+    elif sort_by == 'name_desc':
+        profiles = profiles.order_by('-name')
+    elif sort_by == 'year':
+        profiles = profiles.order_by('year', 'name')
+    elif sort_by == 'relevance' and current_profile:
+        # For relevance, we'll calculate shared classes (done in template for now)
+        # Could be optimized with annotation in the future
+        profiles = profiles.order_by('-created_at')
+    else:
+        profiles = profiles.order_by('name')
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(profiles, 15)  # Show 15 profiles per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Pre-calculate shared classes for each profile on current page
+    profiles_with_shared = []
+    for profile in page_obj.object_list:
+        if current_profile:
+            profile.shared_classes_list = profile.get_shared_classes(current_profile)
+        else:
+            profile.shared_classes_list = []
+        profiles_with_shared.append(profile)
+    
+    # Get all available classes and locations for filter dropdowns
+    from locations.models import Location
+    all_classes = Class.objects.all().order_by('code')
+    all_locations = Location.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'page_obj': page_obj,
+        'profiles': profiles_with_shared,
+        'current_profile': current_profile,
+        'all_classes': all_classes,
+        'all_locations': all_locations,
+        'year_choices': StudentProfile.YEAR_CHOICES,
+        'expertise_choices': StudentClass.EXPERTISE_CHOICES,
+        # Preserve filter values for form
+        'search_query': search_query,
+        'selected_classes': class_filters,
+        'selected_year': year_filter,
+        'selected_location': location_filter,
+        'selected_expertise': expertise_filter,
+        'available_only': available_only,
+        'selected_sort': sort_by,
+        'total_count': paginator.count,
+    }
+    
+    return render(request, 'accounts/profile_list.html', context)
