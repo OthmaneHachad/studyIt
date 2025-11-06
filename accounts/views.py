@@ -7,6 +7,87 @@ from django.db import models
 from .forms import LoginForm, UserRegistrationForm, StudentProfileForm, StudentClassForm, ClassForm
 from .models import StudentProfile, TAProfile, Class, StudentClass
 
+@login_required
+def nearby_classmates(request):
+    """Show classmates who are active and at the same location, with counts per class"""
+    # Ensure the user has a student profile
+    try:
+        current_profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.info(request, 'Please create your profile first.')
+        return redirect('accounts:create_profile')
+    
+    # Ensure current location is set
+    current_location = current_profile.current_location
+    if current_location is None:
+        messages.info(request, 'Set your current location to see nearby classmates.')
+        return render(request, 'accounts/nearby.html', {
+            'current_profile': current_profile,
+            'current_location': None,
+            'user_classes': current_profile.classes.all().order_by('code'),
+            'counts_by_class': {},
+            'grouped_by_class': {},
+        })
+    
+    # Prepare user classes
+    user_classes_qs = current_profile.classes.all().order_by('code')
+    user_class_codes = set(user_classes_qs.values_list('code', flat=True))
+    
+    # Candidates: active students at the same location, excluding self
+    candidates = (
+        StudentProfile.objects
+        .filter(is_active=True, current_location=current_location)
+        .exclude(id=current_profile.id)
+        .select_related('user', 'current_location')
+        .prefetch_related('classes')
+    )
+    
+    # Group visible classmates by shared classes and compute counts
+    from collections import defaultdict
+    grouped_by_class = defaultdict(list)
+    counts_by_class = defaultdict(int)
+    
+    for profile in candidates:
+        # Respect location privacy relative to viewer
+        if not profile.can_view_location(current_profile):
+            continue
+        
+        # Determine shared class codes
+        their_codes = set(profile.classes.values_list('code', flat=True))
+        shared_codes = their_codes.intersection(user_class_codes)
+        
+        for code in shared_codes:
+            counts_by_class[code] += 1
+            grouped_by_class[code].append(profile)
+    
+    # Sort group members by name for consistent display
+    for code in grouped_by_class:
+        grouped_by_class[code].sort(key=lambda p: p.name.lower())
+    
+    # Convert defaultdicts to normal dicts for template context
+    counts_by_class = dict(counts_by_class)
+    grouped_by_class = dict(grouped_by_class)
+    
+    # Build class data list for simpler template rendering
+    user_classes_data = []
+    for cls in user_classes_qs:
+        code = cls.code
+        user_classes_data.append({
+            'code': code,
+            'name': cls.name,
+            'count': counts_by_class.get(code, 0),
+            'members': grouped_by_class.get(code, []),
+        })
+    
+    return render(request, 'accounts/nearby.html', {
+        'current_profile': current_profile,
+        'current_location': current_location,
+        'user_classes': user_classes_qs,
+        'user_classes_data': user_classes_data,
+        'counts_by_class': counts_by_class,
+        'grouped_by_class': grouped_by_class,
+    })
+
 def login_view(request):
     """Handle user login"""
     if request.user.is_authenticated:
