@@ -2,9 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Max
 from accounts.models import StudentProfile
-from .models import ChatRequest
+from .models import ChatRequest, ChatRoom, Message
 from .forms import ChatRequestForm
 
 @login_required
@@ -69,7 +69,7 @@ def chat_request_list(request):
 
 @login_required
 def accept_chat_request(request, request_id):
-    """Accept a chat request"""
+    """Accept a chat request and create a chat room"""
     try:
         profile = request.user.student_profile
     except StudentProfile.DoesNotExist:
@@ -83,9 +83,41 @@ def accept_chat_request(request, request_id):
     if request.method == 'POST':
         chat_request.status = 'accepted'
         chat_request.save()
+        
+        # Create or get chat room
+        room_name = ChatRoom.generate_room_name(
+            chat_request.sender.id,
+            chat_request.recipient.id
+        )
+        
+        chat_room, created = ChatRoom.objects.get_or_create(
+            room_name=room_name,
+            defaults={
+                'participant1': chat_request.sender,
+                'participant2': chat_request.recipient,
+                'chat_request': chat_request,
+            }
+        )
+        
+        # If room already existed, link the request to it
+        if not created and not chat_room.chat_request:
+            chat_room.chat_request = chat_request
+            chat_room.is_active = True
+            chat_room.save()
+        
+        # Create initial message from the chat request if this is a new room
+        if created:
+            Message.objects.create(
+                room=chat_room,
+                sender=chat_request.sender,
+                content=f"Chat request: {chat_request.message}"
+            )
+        
         return JsonResponse({
             'success': True,
-            'message': f'Chat request from {chat_request.sender.name} accepted!'
+            'message': f'Chat request from {chat_request.sender.name} accepted!',
+            'room_id': chat_room.id,
+            'room_name': chat_room.room_name
         })
     
     return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -161,3 +193,68 @@ def check_pending_request(request, recipient_id):
         })
     
     return JsonResponse({'has_pending': False})
+
+@login_required
+def chat_room_list(request):
+    """List all active chat rooms for the current user"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.error(request, 'You must have a student profile to view chats.')
+        return redirect('accounts:profile')
+    
+    # Get all chat rooms where user is a participant
+    chat_rooms = ChatRoom.objects.filter(
+        Q(participant1=profile) | Q(participant2=profile),
+        is_active=True
+    ).select_related('participant1', 'participant2').annotate(
+        last_message_time=Max('messages__timestamp')
+    ).order_by('-updated_at')
+    
+    # Add unread counts and last message for each room
+    for room in chat_rooms:
+        room.other_participant = room.get_other_participant(profile)
+        room.unread_count = room.get_unread_count(profile)
+        room.last_message = room.messages.order_by('-timestamp').first()
+    
+    return render(request, 'chat/room_list.html', {
+        'chat_rooms': chat_rooms,
+        'profile': profile
+    })
+
+@login_required
+def chat_room_detail(request, room_name):
+    """View a specific chat room"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.error(request, 'You must have a student profile to chat.')
+        return redirect('accounts:profile')
+    
+    chat_room = get_object_or_404(ChatRoom, room_name=room_name, is_active=True)
+    
+    # Verify user is a participant
+    if not chat_room.has_participant(profile):
+        messages.error(request, 'You do not have access to this chat room.')
+        return redirect('chat:room_list')
+    
+    # Get the other participant
+    other_participant = chat_room.get_other_participant(profile)
+    
+    # Get messages (last 50, can be paginated later)
+    messages_list = chat_room.messages.select_related('sender').order_by('timestamp')[:50]
+    
+    # Mark messages as read
+    unread_messages = chat_room.messages.filter(
+        is_read=False
+    ).exclude(sender=profile)
+    
+    for msg in unread_messages:
+        msg.mark_as_read()
+    
+    return render(request, 'chat/room_detail.html', {
+        'chat_room': chat_room,
+        'other_participant': other_participant,
+        'messages': messages_list,
+        'profile': profile
+    })

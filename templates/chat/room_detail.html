@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ other_participant.name }} - StudyIt{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 300px);
+        max-height: 700px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: #003057;
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: #f8f9fa;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .message.own {
+        align-items: flex-end;
+    }
+    
+    .message.other {
+        align-items: flex-start;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 0.75rem 1rem;
+        border-radius: 18px;
+        word-wrap: break-word;
+    }
+    
+    .message.own .message-bubble {
+        background: #003057;
+        color: white;
+    }
+    
+    .message.other .message-bubble {
+        background: white;
+        color: #333;
+        border: 1px solid #ddd;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        color: #999;
+        margin-top: 0.25rem;
+        padding: 0 0.5rem;
+    }
+    
+    .chat-input-container {
+        border-top: 1px solid #ddd;
+        padding: 1rem 1.5rem;
+        background: white;
+    }
+    
+    .chat-input-form {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .chat-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-size: 1rem;
+        resize: none;
+    }
+    
+    .chat-input:focus {
+        outline: none;
+        border-color: #003057;
+        box-shadow: 0 0 0 3px rgba(0, 48, 87, 0.1);
+    }
+    
+    .send-button {
+        background: #003057;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    
+    .send-button:hover {
+        background: #004080;
+    }
+    
+    .send-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <a href="{% url 'chat:room_list' %}" style="color: #003057; text-decoration: none; font-weight: 500;">← Back to Chats</a>
+        <a href="{% url 'accounts:profile_detail' other_participant.user.id %}" style="color: #003057; text-decoration: none; font-weight: 500;">
+            View Profile
+        </a>
+    </div>
+    
+    <div class="chat-container">
+        <div class="chat-header">
+            <div>
+                <h2 style="margin: 0; font-size: 1.25rem;">{{ other_participant.name }}</h2>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; opacity: 0.9;">
+                    {% if other_participant.current_location and not other_participant.location_privacy %}
+                        📍 {{ other_participant.current_location.name }}
+                    {% endif %}
+                </p>
+            </div>
+            <div id="connection-status" style="font-size: 0.75rem; font-weight: 500;">🟢 Connected</div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+                <div class="message {% if message.sender == profile %}own{% else %}other{% endif %}" data-message-id="{{ message.id }}">
+                    <div class="message-bubble">
+                        {{ message.content|linebreaksbr }}
+                    </div>
+                    <div class="message-time">
+                        {{ message.timestamp|date:"g:i A" }} • {{ message.timestamp|date:"M d" }}
+                    </div>
+                </div>
+            {% empty %}
+                <div style="text-align: center; color: #999; padding: 2rem;">
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="chat-input-container">
+            <form id="chat-form" class="chat-input-form">
+                {% csrf_token %}
+                <textarea 
+                    id="chat-message-input" 
+                    class="chat-input" 
+                    placeholder="Type your message..." 
+                    rows="1"
+                    maxlength="2000"
+                    required></textarea>
+                <button type="submit" class="send-button" id="send-button">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Determine WebSocket protocol (ws or wss)
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsUrl = wsProtocol + '//' + window.location.host + '/ws/chat/{{ chat_room.room_name }}/';
+
+const chatMessages = document.getElementById('chat-messages');
+const chatForm = document.getElementById('chat-form');
+const messageInput = document.getElementById('chat-message-input');
+const sendButton = document.getElementById('send-button');
+
+// Store current user's profile ID for comparison
+const currentProfileId = {{ profile.id }};
+
+let chatSocket = null;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+let pendingMessageIds = new Map(); // Track optimistic messages: message content -> temp ID
+
+// Connection status indicator
+function updateConnectionStatus(connected) {
+    const statusIndicator = document.getElementById('connection-status');
+    if (statusIndicator) {
+        statusIndicator.textContent = connected ? '🟢 Connected' : '🔴 Connecting...';
+        statusIndicator.style.color = connected ? '#28a745' : '#ffc107';
+    }
+}
+
+// Initialize WebSocket connection
+function connectWebSocket() {
+    try {
+        chatSocket = new WebSocket(wsUrl);
+        updateConnectionStatus(false);
+        
+        chatSocket.onopen = function(e) {
+            console.log('WebSocket connection opened');
+            updateConnectionStatus(true);
+            reconnectAttempts = 0;
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            messageInput.placeholder = 'Type your message...';
+        };
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.error) {
+                console.error('Chat error:', data.error);
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // If this is our own message, check if we already showed it optimistically
+            const isOwn = parseInt(data.sender_id) === currentProfileId;
+            if (isOwn && pendingMessageIds.has(data.message)) {
+                // Find the temporary message we created optimistically
+                const tempId = pendingMessageIds.get(data.message);
+                const existingMessage = chatMessages.querySelector(`[data-temp-id="${tempId}"]`);
+                if (existingMessage) {
+                    // Update the existing optimistic message with the real message ID and timestamp
+                    existingMessage.removeAttribute('data-temp-id');
+                    if (data.message_id) {
+                        existingMessage.setAttribute('data-message-id', data.message_id);
+                    }
+                    // Update timestamp if provided
+                    if (data.timestamp) {
+                        const timeElement = existingMessage.querySelector('.message-time');
+                        if (timeElement) {
+                            const timestamp = new Date(data.timestamp);
+                            timeElement.textContent = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
+                                                       ' • ' + timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        }
+                    }
+                    pendingMessageIds.delete(data.message);
+                    return; // Don't create a duplicate
+                }
+            }
+            
+            // Remove "no messages" placeholder if it exists
+            const emptyMessage = chatMessages.querySelector('div[style*="text-align: center"]');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            if (data.message_id) {
+                messageDiv.setAttribute('data-message-id', data.message_id);
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            // Use textContent to prevent XSS, but preserve line breaks
+            bubble.textContent = data.message;
+            
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+            time.textContent = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
+                               ' • ' + timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        chatSocket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            updateConnectionStatus(false);
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.log('WebSocket connection closed', e.code, e.reason);
+            updateConnectionStatus(false);
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            messageInput.placeholder = 'Connection lost. Reconnecting...';
+            
+            // Attempt to reconnect
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // Exponential backoff, max 10s
+                console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})...`);
+                setTimeout(connectWebSocket, delay);
+            } else {
+                messageInput.placeholder = 'Connection lost. Please refresh the page.';
+                console.error('Max reconnection attempts reached');
+            }
+        };
+    } catch (error) {
+        console.error('Failed to create WebSocket connection:', error);
+        sendButton.disabled = true;
+        messageInput.disabled = true;
+        messageInput.placeholder = 'Failed to connect. Please refresh the page.';
+    }
+}
+
+// Auto-resize textarea
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// Scroll to bottom on load
+chatMessages.scrollTop = chatMessages.scrollHeight;
+
+// Initialize connection when page loads
+connectWebSocket();
+
+chatForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        alert('Not connected. Please wait for connection...');
+        return;
+    }
+    
+    // Remove "no messages" placeholder if it exists
+    const emptyMessage = chatMessages.querySelector('div[style*="text-align: center"]');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    // Store message text before clearing input
+    const messageText = message;
+    
+    // Clear input immediately
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    
+    // Generate a unique temporary ID for this optimistic message
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Show message immediately (optimistic update) with a temporary marker
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message own';
+    messageDiv.setAttribute('data-temp-id', tempId); // Mark as temporary with unique ID
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = messageText;
+    const time = document.createElement('div');
+    time.className = 'message-time';
+    const now = new Date();
+    time.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
+                       ' • ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    messageDiv.appendChild(bubble);
+    messageDiv.appendChild(time);
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Track this optimistic message by content
+    pendingMessageIds.set(messageText, tempId);
+    
+    sendButton.disabled = true;
+    
+    try {
+        chatSocket.send(JSON.stringify({
+            'message': messageText,
+            'username': '{{ user.username }}'
+        }));
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Failed to send message. Please try again.');
+        // Remove the optimistic message if send failed
+        messageDiv.remove();
+        pendingMessageIds.delete(messageText);
+    }
+    
+    sendButton.disabled = false;
+});
+</script>
+{% endblock %}
+

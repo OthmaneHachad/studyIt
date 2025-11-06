@@ -10,5 +10,7 @@ urlpatterns = [
     path('requests/reject/<int:request_id>/', views.reject_chat_request, name='reject_request'),
     path('requests/cancel/<int:request_id>/', views.cancel_chat_request, name='cancel_request'),
     path('requests/check/<int:recipient_id>/', views.check_pending_request, name='check_pending'),
+    path('rooms/', views.chat_room_list, name='room_list'),
+    path('rooms/<str:room_name>/', views.chat_room_detail, name='room_detail'),
 ]
 

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}My Chats - StudyIt{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #003057;">My Chats</h1>
+        <a href="{% url 'chat:request_list' %}" style="background: #003057; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 5px; font-weight: 500;">
+            Chat Requests
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if chat_rooms %}
+        <div style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            {% for room in chat_rooms %}
+                <a href="{% url 'chat:room_detail' room.room_name %}" style="text-decoration: none; color: inherit; display: block;">
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; background: {% if room.unread_count > 0 %}#f0f8ff{% else %}#f8f9fa{% endif %}; transition: background 0.2s;" onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='{% if room.unread_count > 0 %}#f0f8ff{% else %}#f8f9fa{% endif %}'">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <h3 style="color: #003057; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    {{ room.other_participant.name }}
+                                    {% if room.unread_count > 0 %}
+                                        <span style="background: #dc3545; color: white; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
+                                            {{ room.unread_count }} new
+                                        </span>
+                                    {% endif %}
+                                </h3>
+                                {% if room.last_message %}
+                                    <p style="color: #666; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                        <strong>{{ room.last_message.sender.name }}:</strong> 
+                                        {{ room.last_message.content|truncatewords:20 }}
+                                    </p>
+                                    <p style="color: #999; font-size: 0.8rem;">
+                                        {{ room.last_message.timestamp|timesince }} ago
+                                    </p>
+                                {% else %}
+                                    <p style="color: #999; font-style: italic; font-size: 0.9rem;">No messages yet</p>
+                                {% endif %}
+                            </div>
+                            <div style="color: #003057; font-size: 1.5rem;">→</div>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="background: white; padding: 3rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+            <p style="color: #666; font-size: 1.1rem; margin-bottom: 1rem;">You don't have any active chats yet.</p>
+            <p style="color: #999; margin-bottom: 1.5rem;">Start a conversation by sending a chat request to another student!</p>
+            <a href="{% url 'accounts:profile_list' %}" style="background: #003057; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 5px; font-weight: 500; display: inline-block;">
+                Browse Students
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

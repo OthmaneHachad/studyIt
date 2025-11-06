@@ -158,7 +158,12 @@ function acceptRequest(requestId) {
     .then(data => {
         if (data.success) {
             alert(data.message);
-            location.reload();
+            // Redirect to chat room if room_name is provided
+            if (data.room_name) {
+                window.location.href = `/chat/rooms/${data.room_name}/`;
+            } else {
+                location.reload();
+            }
         } else {
             alert('Error: ' + (data.error || 'Failed to accept request'));
         }

@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # "daphne",  # Temporarily disabled - use for WebSocket features only
+    "daphne",  # Must be first for ASGI support
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-party apps
-    # "channels",  # Temporarily commented out - install with: pip install channels==4.0.0
+    "channels",  # Required for WebSocket support
     # "rest_framework",  # Temporarily commented out - install with: pip install djangorestframework==3.14.0
     # "corsheaders",  # Temporarily commented out - install with: pip install django-cors-headers==4.3.0
     # Local apps
@@ -79,7 +79,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "studyit_project.wsgi.application"
-# ASGI_APPLICATION = "studyit_project.asgi.application"  # Temporarily disabled - enable when WebSocket features are needed
+ASGI_APPLICATION = "studyit_project.asgi.application"  # Required for WebSocket support
 
 
 # Database
@@ -142,12 +142,12 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Django Channels Configuration (commented out until channels is installed)
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer"
-#     }
-# }
+# Django Channels Configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # CORS Settings (for development)
 CORS_ALLOW_ALL_ORIGINS = True  # Change in production
