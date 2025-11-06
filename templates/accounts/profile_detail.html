@@ -46,16 +46,54 @@
                     {% endif %}
                 </div>
                 
-                {% if profile.current_location and not profile.location_privacy %}
-                    <div>
-                        <strong style="color: #003057;">Current Location:</strong>
-                        <span style="color: #666; margin-left: 0.5rem;">{{ profile.current_location.name }}</span>
+                <!-- Location Privacy Display -->
+                {% if viewing_own %}
+                    <!-- Show privacy setting to profile owner -->
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #ddd;">
+                        <strong style="color: #003057;">🔒 Location Privacy:</strong>
+                        <div style="margin-top: 0.5rem; padding: 0.5rem; background: white; border-radius: 5px; border: 1px solid #003057;">
+                            <span style="font-size: 1rem;">{{ profile.get_location_privacy_display_icon }}</span>
+                            <strong style="color: #003057; margin-left: 0.5rem;">{{ profile.get_location_privacy_display }}</strong>
+                        </div>
+                        <a href="{% url 'accounts:profile' %}" style="display: inline-block; margin-top: 0.5rem; color: #003057; font-size: 0.85rem; text-decoration: underline;">
+                            Change privacy settings →
+                        </a>
                     </div>
-                {% elif profile.location_privacy %}
-                    <div>
-                        <strong style="color: #003057;">Location:</strong>
-                        <span style="color: #999; margin-left: 0.5rem; font-style: italic;">🔒 Private</span>
-                    </div>
+                    
+                    {% if profile.current_location %}
+                        <div>
+                            <strong style="color: #003057;">📍 Current Location:</strong>
+                            <span style="color: #666; margin-left: 0.5rem;">{{ profile.current_location.name }}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Show location based on privacy settings -->
+                    {% if can_see_location and profile.current_location %}
+                        <div style="background: #e8f5e9; padding: 1rem; border-radius: 8px; border: 1px solid #4caf50;">
+                            <strong style="color: #2e7d32;">📍 Current Location:</strong>
+                            <span style="color: #1b5e20; margin-left: 0.5rem; font-size: 1.1rem; font-weight: 600;">{{ profile.current_location.name }}</span>
+                            {% if profile.location_privacy == 'classmates' %}
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #555;">
+                                    <em>👥 Visible because you share classes</em>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% elif profile.location_privacy == 'hidden' %}
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #ddd;">
+                            <strong style="color: #003057;">Location:</strong>
+                            <span style="color: #999; margin-left: 0.5rem; font-style: italic;">🔒 This student has hidden their location</span>
+                        </div>
+                    {% elif profile.location_privacy == 'classmates' and not can_see_location %}
+                        <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border: 1px solid #ffc107;">
+                            <strong style="color: #856404;">Location:</strong>
+                            <span style="color: #856404; margin-left: 0.5rem; font-style: italic;">👥 This student only shares their location with classmates</span>
+                        </div>
+                    {% elif not profile.current_location %}
+                        <div>
+                            <strong style="color: #003057;">Location:</strong>
+                            <span style="color: #999; margin-left: 0.5rem; font-style: italic;">Not currently set</span>
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

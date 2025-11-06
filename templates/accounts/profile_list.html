@@ -514,10 +514,12 @@
                                     <p class="profile-year">{{ profile.get_year_display }}</p>
                                 </div>
                                 <div>
-                                    {% if profile.location_privacy %}
-                                        <span class="availability-badge badge-private">🔒 Private</span>
+                                    {% if profile.location_privacy == 'public' %}
+                                        <span class="availability-badge badge-available">🌍 Public</span>
+                                    {% elif profile.location_privacy == 'classmates' %}
+                                        <span class="availability-badge" style="background: #fff3cd; color: #856404;">👥 Classmates</span>
                                     {% else %}
-                                        <span class="availability-badge badge-available">✓ Available</span>
+                                        <span class="availability-badge badge-private">🔒 Private</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -539,9 +541,20 @@
                             {% endif %}
                             
                             <!-- Location -->
-                            {% if profile.current_location and not profile.location_privacy %}
-                                <div class="profile-location">
-                                    📍 <strong>{{ profile.current_location.name }}</strong>
+                            {% if profile.can_see_location and profile.current_location %}
+                                <div class="profile-location" style="background: #e8f5e9; padding: 0.5rem; border-radius: 5px; border: 1px solid #4caf50;">
+                                    📍 <strong style="color: #2e7d32;">{{ profile.current_location.name }}</strong>
+                                    {% if profile.location_privacy == 'classmates' %}
+                                        <span style="font-size: 0.8rem; color: #555; margin-left: 0.25rem;">(shared with classmates)</span>
+                                    {% endif %}
+                                </div>
+                            {% elif profile.location_privacy == 'classmates' and not profile.can_see_location %}
+                                <div class="profile-location" style="color: #856404; font-style: italic; font-size: 0.85rem;">
+                                    👥 Location visible to classmates only
+                                </div>
+                            {% elif profile.location_privacy == 'hidden' %}
+                                <div class="profile-location" style="color: #999; font-style: italic; font-size: 0.85rem;">
+                                    🔒 Location is private
                                 </div>
                             {% endif %}
                             

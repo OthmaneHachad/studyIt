@@ -184,7 +184,7 @@ class StudentProfileForm(forms.ModelForm):
     
     class Meta:
         model = StudentProfile
-        fields = ['name', 'year', 'location_privacy']
+        fields = ['name', 'year', 'location_privacy', 'current_location']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -193,8 +193,19 @@ class StudentProfileForm(forms.ModelForm):
             'year': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'location_privacy': forms.CheckboxInput(attrs={
+            'location_privacy': forms.RadioSelect(attrs={
                 'class': 'form-check-input'
             }),
+            'current_location': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+        }
+        labels = {
+            'location_privacy': 'Location Privacy Settings',
+            'current_location': 'Current Study Location (Optional)',
+        }
+        help_texts = {
+            'location_privacy': 'Choose who can see your current location when you\'re studying on campus',
+            'current_location': 'Set your current location to help classmates find you',
         }
 

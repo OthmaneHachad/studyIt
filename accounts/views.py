@@ -239,9 +239,51 @@ def profile_detail(request, user_id):
         messages.error(request, 'Profile not found.')
         return redirect('accounts:profile_list')
     
+    # Get current user's profile for privacy checks
+    try:
+        viewer_profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        viewer_profile = None
+    
+    # Check if viewer can see location
+    viewing_own = request.user == user
+    can_see_location = viewing_own or profile.can_view_location(viewer_profile)
+    
     return render(request, 'accounts/profile_detail.html', {
         'profile': profile,
-        'viewing_own': request.user == user
+        'viewing_own': viewing_own,
+        'can_see_location': can_see_location,
+        'viewer_profile': viewer_profile
+    })
+
+@login_required
+def update_location_privacy(request):
+    """AJAX endpoint to update location privacy setting"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found'}, status=400)
+    
+    privacy_setting = request.POST.get('location_privacy')
+    
+    # Validate the privacy setting
+    valid_settings = dict(StudentProfile.LOCATION_PRIVACY_CHOICES).keys()
+    if privacy_setting not in valid_settings:
+        return JsonResponse({'error': 'Invalid privacy setting'}, status=400)
+    
+    # Update the privacy setting
+    profile.location_privacy = privacy_setting
+    profile.save()
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Privacy updated to: {profile.get_location_privacy_display()}',
+        'privacy_setting': privacy_setting,
+        'privacy_display': profile.get_location_privacy_display(),
+        'privacy_icon': profile.get_location_privacy_display_icon(),
     })
 
 @login_required
@@ -289,10 +331,10 @@ def profile_list(request):
     if expertise_filter:
         profiles = profiles.filter(student_classes__expertise_level=expertise_filter)
     
-    # Filter by availability (only show students who are not hiding location)
+    # Filter by availability (only show students who have public location)
     available_only = request.GET.get('available') == 'true'
     if available_only:
-        profiles = profiles.filter(location_privacy=False)
+        profiles = profiles.filter(location_privacy='public')
     
     # Remove duplicates from joins
     profiles = profiles.distinct()
@@ -318,13 +360,15 @@ def profile_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Pre-calculate shared classes for each profile on current page
+    # Pre-calculate shared classes and visibility for each profile on current page
     profiles_with_shared = []
     for profile in page_obj.object_list:
         if current_profile:
             profile.shared_classes_list = profile.get_shared_classes(current_profile)
+            profile.can_see_location = profile.can_view_location(current_profile)
         else:
             profile.shared_classes_list = []
+            profile.can_see_location = False
         profiles_with_shared.append(profile)
     
     # Get all available classes and locations for filter dropdowns

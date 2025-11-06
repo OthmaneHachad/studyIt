@@ -16,5 +16,6 @@ urlpatterns = [
     path('profile/search-classes/', views.search_classes, name='search_classes'),
     path('profile/remove-class/<int:class_id>/', views.remove_class, name='remove_class'),
     path('profile/update-expertise/<int:class_id>/', views.update_class_expertise, name='update_class_expertise'),
+    path('profile/update-privacy/', views.update_location_privacy, name='update_location_privacy'),
 ]
 

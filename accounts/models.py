@@ -48,11 +48,22 @@ class StudentProfile(models.Model):
         ('graduate', 'Graduate'),
     ]
     
+    LOCATION_PRIVACY_CHOICES = [
+        ('public', 'Show to Everyone'),
+        ('classmates', 'Show to Classmates Only'),
+        ('hidden', 'Hide from Everyone'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     name = models.CharField(max_length=200, help_text="Your full name")
     year = models.CharField(max_length=20, choices=YEAR_CHOICES)
     classes = models.ManyToManyField(Class, through='StudentClass', related_name='students', blank=True)
-    location_privacy = models.BooleanField(default=False, help_text="Hide your location from others")
+    location_privacy = models.CharField(
+        max_length=20,
+        choices=LOCATION_PRIVACY_CHOICES,
+        default='public',
+        help_text="Control who can see your current location"
+    )
     current_location = models.ForeignKey('locations.Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
     is_active = models.BooleanField(default=True, help_text="Currently using StudyIt")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,6 +87,43 @@ class StudentProfile(models.Model):
         their_classes = set(other_profile.classes.values_list('code', flat=True))
         return list(my_classes.intersection(their_classes))
     
+    def can_view_location(self, viewer_profile):
+        """
+        Check if the viewer profile can see this profile's location
+        
+        Args:
+            viewer_profile: StudentProfile of the viewer (can be None for anonymous)
+        
+        Returns:
+            bool: True if location should be visible to viewer
+        """
+        # If location is public, everyone can see it
+        if self.location_privacy == 'public':
+            return True
+        
+        # If hidden, no one can see it
+        if self.location_privacy == 'hidden':
+            return False
+        
+        # If classmates only, check if viewer shares any classes
+        if self.location_privacy == 'classmates':
+            if not viewer_profile:
+                return False
+            shared_classes = self.get_shared_classes(viewer_profile)
+            return len(shared_classes) > 0
+        
+        # Default to hidden for unknown privacy settings
+        return False
+    
+    def get_location_privacy_display_icon(self):
+        """Get icon for current privacy setting"""
+        icons = {
+            'public': '🌍',
+            'classmates': '👥',
+            'hidden': '🔒',
+        }
+        return icons.get(self.location_privacy, '🔒')
+    
     def get_matching_score(self, other_profile):
         """Calculate matching score with another student profile"""
         if not other_profile:
@@ -87,13 +135,14 @@ class StudentProfile(models.Model):
         shared_classes = self.get_shared_classes(other_profile)
         score += len(shared_classes) * 10
         
-        # Same location (5 points)
+        # Same location (5 points) - only if location is visible
         if (self.current_location and other_profile.current_location and 
-            self.current_location == other_profile.current_location):
+            self.current_location == other_profile.current_location and
+            self.can_view_location(other_profile)):
             score += 5
         
-        # Both available/not hiding location (3 points)
-        if not self.location_privacy and not other_profile.location_privacy:
+        # Both available (3 points)
+        if self.location_privacy == 'public' and other_profile.location_privacy == 'public':
             score += 3
         
         # Same year (2 points)

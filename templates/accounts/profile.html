@@ -44,15 +44,59 @@
                     {% endif %}
                 </div>
                 
-                <div>
-                    <strong style="color: #003057;">Location Privacy:</strong>
-                    <span style="color: #666; margin-left: 0.5rem;">
-                        {% if profile.location_privacy %}
-                            🔒 Hidden from others
-                        {% else %}
-                            🌍 Visible to others
-                        {% endif %}
-                    </span>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #ddd;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <strong style="color: #003057;">🔒 Location Privacy</strong>
+                        <button id="toggle-privacy-btn" style="background: #003057; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 5px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">
+                            Quick Change
+                        </button>
+                    </div>
+                    <div id="privacy-display" style="padding: 0.75rem; background: white; border-radius: 5px; border: 2px solid #003057;">
+                        <span style="font-size: 1.1rem;">{{ profile.get_location_privacy_display_icon }}</span>
+                        <strong style="color: #003057; margin-left: 0.5rem;">{{ profile.get_location_privacy_display }}</strong>
+                        <div style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">
+                            {% if profile.location_privacy == 'public' %}
+                                Everyone can see your location
+                            {% elif profile.location_privacy == 'classmates' %}
+                                Only your classmates can see your location
+                            {% else %}
+                                Your location is hidden from everyone
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Toggle Dropdown -->
+                    <div id="privacy-toggle-dropdown" style="display: none; margin-top: 0.75rem; padding: 1rem; background: white; border: 2px solid #003057; border-radius: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 0.75rem; color: #003057;">Select Privacy Setting:</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button class="privacy-option-btn" data-privacy="public" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: {% if profile.location_privacy == 'public' %}#003057{% else %}#f8f9fa{% endif %}; color: {% if profile.location_privacy == 'public' %}white{% else %}#333{% endif %}; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-align: left; font-size: 0.9rem;">
+                                <span>🌍</span>
+                                <div>
+                                    <strong>Show to Everyone</strong>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">Anyone can see your location</div>
+                                </div>
+                            </button>
+                            <button class="privacy-option-btn" data-privacy="classmates" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: {% if profile.location_privacy == 'classmates' %}#003057{% else %}#f8f9fa{% endif %}; color: {% if profile.location_privacy == 'classmates' %}white{% else %}#333{% endif %}; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-align: left; font-size: 0.9rem;">
+                                <span>👥</span>
+                                <div>
+                                    <strong>Show to Classmates Only</strong>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">Only students in your classes</div>
+                                </div>
+                            </button>
+                            <button class="privacy-option-btn" data-privacy="hidden" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: {% if profile.location_privacy == 'hidden' %}#003057{% else %}#f8f9fa{% endif %}; color: {% if profile.location_privacy == 'hidden' %}white{% else %}#333{% endif %}; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-align: left; font-size: 0.9rem;">
+                                <span>🔒</span>
+                                <div>
+                                    <strong>Hide from Everyone</strong>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">Completely private</div>
+                                </div>
+                            </button>
+                        </div>
+                        <button id="cancel-toggle-btn" style="width: 100%; margin-top: 0.75rem; padding: 0.5rem; background: #e0e0e0; color: #333; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                            Cancel
+                        </button>
+                    </div>
+                    
+                    <div id="privacy-message" style="margin-top: 0.75rem; padding: 0.5rem; border-radius: 5px; display: none;"></div>
                 </div>
                 
                 {% if profile.current_location %}
@@ -86,5 +130,138 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-privacy-btn');
+    const cancelBtn = document.getElementById('cancel-toggle-btn');
+    const dropdown = document.getElementById('privacy-toggle-dropdown');
+    const privacyDisplay = document.getElementById('privacy-display');
+    const messageDiv = document.getElementById('privacy-message');
+    const privacyOptionBtns = document.querySelectorAll('.privacy-option-btn');
+    
+    // Toggle dropdown visibility
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            if (dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+                toggleBtn.textContent = 'Hide Options';
+            } else {
+                dropdown.style.display = 'none';
+                toggleBtn.textContent = 'Quick Change';
+            }
+        });
+    }
+    
+    // Cancel button
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            dropdown.style.display = 'none';
+            toggleBtn.textContent = 'Quick Change';
+        });
+    }
+    
+    // Handle privacy option selection
+    privacyOptionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const privacySetting = this.getAttribute('data-privacy');
+            updatePrivacy(privacySetting);
+        });
+    });
+    
+    function updatePrivacy(setting) {
+        const formData = new FormData();
+        formData.append('location_privacy', setting);
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        
+        fetch('{% url "accounts:update_location_privacy" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken ? csrfToken.value : getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the display
+                const iconMap = {
+                    'public': '🌍',
+                    'classmates': '👥',
+                    'hidden': '🔒'
+                };
+                const descMap = {
+                    'public': 'Everyone can see your location',
+                    'classmates': 'Only your classmates can see your location',
+                    'hidden': 'Your location is hidden from everyone'
+                };
+                
+                privacyDisplay.innerHTML = `
+                    <span style="font-size: 1.1rem;">${data.privacy_icon}</span>
+                    <strong style="color: #003057; margin-left: 0.5rem;">${data.privacy_display}</strong>
+                    <div style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">
+                        ${descMap[setting]}
+                    </div>
+                `;
+                
+                // Show success message
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#d4edda';
+                messageDiv.style.color = '#155724';
+                messageDiv.textContent = data.message;
+                
+                // Hide dropdown
+                dropdown.style.display = 'none';
+                toggleBtn.textContent = 'Quick Change';
+                
+                // Update button styles
+                privacyOptionBtns.forEach(btn => {
+                    if (btn.getAttribute('data-privacy') === setting) {
+                        btn.style.background = '#003057';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = '#f8f9fa';
+                        btn.style.color = '#333';
+                    }
+                });
+                
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            } else {
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.textContent = 'Error: ' + (data.error || 'Failed to update privacy');
+            }
+        })
+        .catch(error => {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#f8d7da';
+            messageDiv.style.color = '#721c24';
+            messageDiv.textContent = 'Error updating privacy. Please try again.';
+        });
+    }
+    
+    // Helper function to get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
 {% endblock %}
 
