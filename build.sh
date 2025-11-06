@@ -2,7 +2,11 @@
 # exit on error
 set -o errexit
 
+# Verify Python version
+python --version
+
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Run migrations

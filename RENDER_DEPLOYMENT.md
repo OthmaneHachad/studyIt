@@ -1,5 +1,16 @@
 # Render Deployment Guide
 
+## Important: Set Python Version in Render Dashboard
+
+**CRITICAL**: Even though `runtime.txt` exists, you MUST manually set the Python version in Render's dashboard:
+
+1. Go to your Render service settings
+2. Under "Environment", find "Python Version" 
+3. **Manually select Python 3.11** (or enter `3.11.9`)
+4. Save the changes
+
+The `runtime.txt` file should work, but if Render is still using Python 3.13, manually setting it in the dashboard will fix it.
+
 ## Environment Variables
 
 Set these in your Render dashboard under "Environment":
