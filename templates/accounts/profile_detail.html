@@ -100,12 +100,241 @@
         
         {% if not viewing_own %}
             <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem;">
-                <a href="#" style="background: #003057; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 5px; font-weight: 500; display: inline-block;">
-                    Start Chat
-                </a>
+                <button id="chatRequestBtn" style="background: #003057; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 5px; font-weight: 500; display: inline-block; border: none; cursor: pointer;">
+                    💬 Send Chat Request
+                </button>
+                <div id="pendingRequestStatus" style="margin-top: 1rem; display: none;">
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border: 1px solid #ffc107;">
+                        <strong style="color: #856404;">⏳ You have a pending chat request with {{ profile.name }}</strong>
+                        <div id="pendingRequestMessage" style="margin-top: 0.5rem; color: #856404; font-size: 0.9rem;"></div>
+                        <button id="cancelPendingBtn" style="margin-top: 0.5rem; background: #dc3545; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem;">
+                            Cancel Request
+                        </button>
+                    </div>
+                </div>
             </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Chat Request Modal -->
+{% if not viewing_own %}
+<div id="chatRequestModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="color: #003057; margin: 0;">Send Chat Request to {{ profile.name }}</h2>
+            <button id="closeModalBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        
+        <form id="chatRequestForm">
+            {% csrf_token %}
+            <div style="margin-bottom: 1.5rem;">
+                <label for="id_message" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500;">
+                    Message <span style="color: #999;">(max 500 characters)</span>
+                </label>
+                <textarea 
+                    id="id_message" 
+                    name="message" 
+                    rows="4" 
+                    maxlength="500"
+                    placeholder="Briefly describe the problem or reason for the chat request..."
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; resize: vertical; font-size: 0.95rem;"
+                ></textarea>
+                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #666;">
+                    <span id="charCount">0</span>/500 characters
+                </div>
+            </div>
+            
+            <div id="formError" style="display: none; background: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 5px; margin-bottom: 1rem;"></div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" id="cancelBtn" style="padding: 0.75rem 1.5rem; border: 1px solid #ddd; background: white; border-radius: 5px; cursor: pointer; color: #333;">Cancel</button>
+                <button type="submit" style="padding: 0.75rem 1.5rem; background: #003057; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">Send Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+    {% if not viewing_own %}
+    const profileId = {{ profile.id }};
+    let pendingRequestId = null;
+    
+    // Check for pending request on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkPendingRequest();
+        setupEventListeners();
+        // Auto-open modal if chat=1 in query string
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('chat') === '1') {
+            const openBtn = document.getElementById('chatRequestBtn');
+            if (openBtn) {
+                openBtn.click();
+            }
+        }
+    });
+    
+    function setupEventListeners() {
+        const modal = document.getElementById('chatRequestModal');
+        const openBtn = document.getElementById('chatRequestBtn');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const form = document.getElementById('chatRequestForm');
+        const messageField = document.getElementById('id_message');
+        const charCount = document.getElementById('charCount');
+        const cancelPendingBtn = document.getElementById('cancelPendingBtn');
+        
+        // Open modal
+        openBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            messageField.focus();
+        });
+        
+        // Close modal
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Character count
+        messageField.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+        
+        // Form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendChatRequest();
+        });
+        
+        // Cancel pending request
+        if (cancelPendingBtn) {
+            cancelPendingBtn.addEventListener('click', function() {
+                if (pendingRequestId) {
+                    cancelPendingRequest();
+                }
+            });
+        }
+    }
+    
+    function closeModal() {
+        document.getElementById('chatRequestModal').style.display = 'none';
+        document.getElementById('chatRequestForm').reset();
+        document.getElementById('charCount').textContent = '0';
+        document.getElementById('formError').style.display = 'none';
+    }
+    
+    function checkPendingRequest() {
+        fetch(`/chat/requests/check/${profileId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_pending) {
+                    pendingRequestId = data.request_id;
+                    document.getElementById('pendingRequestStatus').style.display = 'block';
+                    document.getElementById('pendingRequestMessage').textContent = data.message;
+                    document.getElementById('chatRequestBtn').style.display = 'none';
+                } else {
+                    document.getElementById('pendingRequestStatus').style.display = 'none';
+                    document.getElementById('chatRequestBtn').style.display = 'inline-block';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking pending request:', error);
+            });
+    }
+    
+    function sendChatRequest() {
+        const form = document.getElementById('chatRequestForm');
+        const formData = new FormData(form);
+        const errorDiv = document.getElementById('formError');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        errorDiv.style.display = 'none';
+        
+        fetch(`/chat/requests/send/${profileId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeModal();
+                alert(data.message);
+                checkPendingRequest(); // Refresh pending request status
+            } else {
+                errorDiv.textContent = data.error || (data.errors && data.errors.message ? data.errors.message[0] : 'An error occurred');
+                errorDiv.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'An error occurred while sending the request. Please try again.';
+            errorDiv.style.display = 'block';
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Request';
+        });
+    }
+    
+    function cancelPendingRequest() {
+        if (!pendingRequestId) return;
+        
+        const cancelBtn = document.getElementById('cancelPendingBtn');
+        cancelBtn.disabled = true;
+        cancelBtn.textContent = 'Cancelling...';
+        
+        fetch(`/chat/requests/cancel/${pendingRequestId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                checkPendingRequest(); // Refresh status
+            } else {
+                alert('Error: ' + (data.error || 'Failed to cancel request'));
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while cancelling the request.');
+        })
+        .finally(() => {
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = 'Cancel Request';
+        });
+    }
+    {% endif %}
+</script>
 {% endblock %}
 

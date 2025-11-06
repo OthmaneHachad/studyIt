@@ -16,10 +16,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home_view, name="home"),
     path("accounts/", include("accounts.urls")),
+    path("chat/", include("chat.urls")),
     # App URLs will be included here as they're developed
     # path("locations/", include("locations.urls")),
     # path("sessions/", include("study_sessions.urls")),
-    # path("chat/", include("chat.urls")),
 ]
 
 # Serve media files in development

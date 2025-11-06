@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.utils import timezone
 from .models import StudentProfile, TAProfile, Class, StudentClass
 
 class LoginForm(forms.Form):
@@ -64,6 +65,22 @@ class UserRegistrationForm(UserCreationForm):
         self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Username'})
         self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Password'})
         self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Confirm Password'})
+
+    def save(self, commit=True):
+        """Create user ensuring last_login is set to avoid legacy NOT NULL constraint.
+
+        Also copies extra fields (email, first_name, last_name) onto the User.
+        """
+        user = super().save(commit=False)
+        user.email = self.cleaned_data.get('email', '')
+        user.first_name = self.cleaned_data.get('first_name', '')
+        user.last_name = self.cleaned_data.get('last_name', '')
+        # Safety for older DBs where last_login may be NOT NULL
+        if user.last_login is None:
+            user.last_login = timezone.now()
+        if commit:
+            user.save()
+        return user
 
 class ClassForm(forms.ModelForm):
     """Form for creating a new class"""
