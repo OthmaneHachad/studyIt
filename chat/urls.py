@@ -12,5 +12,7 @@ urlpatterns = [
     path('requests/check/<int:recipient_id>/', views.check_pending_request, name='check_pending'),
     path('rooms/', views.chat_room_list, name='room_list'),
     path('rooms/<str:room_name>/', views.chat_room_detail, name='room_detail'),
+    path('rooms/<str:room_name>/send/', views.send_message, name='send_message'),
+    path('rooms/<str:room_name>/messages/', views.get_new_messages, name='get_messages'),
 ]
 

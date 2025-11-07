@@ -184,12 +184,18 @@ const messageInput = document.getElementById('chat-message-input');
 const sendButton = document.getElementById('send-button');
 
 // Store current user's profile ID for comparison
-const currentProfileId = {{ profile.id }};
+const currentProfileId = parseInt('{{ profile.id }}');
+const roomName = '{{ chat_room.room_name|escapejs }}';
+const sendMessageUrl = '{% url "chat:send_message" chat_room.room_name %}';
+const getMessagesUrl = '{% url "chat:get_messages" chat_room.room_name %}';
 
 let chatSocket = null;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 let pendingMessageIds = new Map(); // Track optimistic messages: message content -> temp ID
+let lastMessageTimestamp = null; // Track last message timestamp for polling
+let pollInterval = null; // Interval for polling new messages when WebSocket is down
+const POLL_INTERVAL_MS = 3000; // Poll every 3 seconds when WebSocket is disconnected
 
 // Connection status indicator
 function updateConnectionStatus(connected) {
@@ -203,19 +209,27 @@ function updateConnectionStatus(connected) {
 // Initialize WebSocket connection
 function connectWebSocket() {
     try {
+        console.log('Attempting to connect to WebSocket:', wsUrl);
         chatSocket = new WebSocket(wsUrl);
         updateConnectionStatus(false);
         
         chatSocket.onopen = function(e) {
-            console.log('WebSocket connection opened');
+            console.log('WebSocket connection opened successfully');
             updateConnectionStatus(true);
             reconnectAttempts = 0;
+            // Stop polling when WebSocket is connected
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            // Always keep send button enabled - we use HTTP for sending
             sendButton.disabled = false;
             messageInput.disabled = false;
             messageInput.placeholder = 'Type your message...';
         };
         
         chatSocket.onmessage = function(e) {
+            console.log('WebSocket message received:', e.data);
             const data = JSON.parse(e.data);
             
             if (data.error) {
@@ -244,72 +258,170 @@ function connectWebSocket() {
                             timeElement.textContent = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
                                                        ' • ' + timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                         }
+                        lastMessageTimestamp = data.timestamp;
                     }
                     pendingMessageIds.delete(data.message);
                     return; // Don't create a duplicate
                 }
             }
             
-            // Remove "no messages" placeholder if it exists
-            const emptyMessage = chatMessages.querySelector('div[style*="text-align: center"]');
-            if (emptyMessage) {
-                emptyMessage.remove();
-            }
-            
-            // Create message element
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            // Check if message already exists (by ID) to prevent duplicates
             if (data.message_id) {
-                messageDiv.setAttribute('data-message-id', data.message_id);
+                const existingMsg = chatMessages.querySelector(`[data-message-id="${data.message_id}"]`);
+                if (existingMsg) {
+                    return; // Message already displayed
+                }
             }
             
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble';
-            // Use textContent to prevent XSS, but preserve line breaks
-            bubble.textContent = data.message;
-            
-            const time = document.createElement('div');
-            time.className = 'message-time';
-            const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
-            time.textContent = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
-                               ' • ' + timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
-            messageDiv.appendChild(bubble);
-            messageDiv.appendChild(time);
-            
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Display the message
+            displayMessage(data.message, data.sender_id, data.timestamp, data.message_id, isOwn);
+            if (data.timestamp) {
+                lastMessageTimestamp = data.timestamp;
+            }
         };
         
         chatSocket.onerror = function(error) {
             console.error('WebSocket error:', error);
+            console.error('WebSocket URL was:', wsUrl);
+            console.error('WebSocket readyState:', chatSocket.readyState);
             updateConnectionStatus(false);
+            
+            // Show user-friendly error message
+            const statusIndicator = document.getElementById('connection-status');
+            if (statusIndicator) {
+                statusIndicator.textContent = '🔴 Connection Error';
+                statusIndicator.style.color = '#dc3545';
+            }
         };
         
         chatSocket.onclose = function(e) {
-            console.log('WebSocket connection closed', e.code, e.reason);
+            console.log('WebSocket connection closed', 'Code:', e.code, 'Reason:', e.reason, 'WasClean:', e.wasClean);
             updateConnectionStatus(false);
-            sendButton.disabled = true;
-            messageInput.disabled = true;
-            messageInput.placeholder = 'Connection lost. Reconnecting...';
+            // Keep send button enabled - we can still send via HTTP
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            messageInput.placeholder = 'Type your message... (Real-time updates unavailable)';
             
-            // Attempt to reconnect
-            if (reconnectAttempts < maxReconnectAttempts) {
+            // Start polling for new messages when WebSocket is down
+            if (!pollInterval) {
+                startPolling();
+            }
+            
+            // Attempt to reconnect only if it was an unexpected close
+            if (!e.wasClean && reconnectAttempts < maxReconnectAttempts) {
                 reconnectAttempts++;
                 const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // Exponential backoff, max 10s
                 console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})...`);
                 setTimeout(connectWebSocket, delay);
             } else {
-                messageInput.placeholder = 'Connection lost. Please refresh the page.';
-                console.error('Max reconnection attempts reached');
+                if (reconnectAttempts >= maxReconnectAttempts) {
+                    console.log('Max reconnection attempts reached. Using HTTP polling for new messages.');
+                }
             }
         };
     } catch (error) {
         console.error('Failed to create WebSocket connection:', error);
-        sendButton.disabled = true;
-        messageInput.disabled = true;
-        messageInput.placeholder = 'Failed to connect. Please refresh the page.';
+        console.error('Error details:', error.message, error.stack);
+        // Keep send button enabled - we can still send via HTTP
+        sendButton.disabled = false;
+        messageInput.disabled = false;
+        messageInput.placeholder = 'Type your message... (Real-time updates unavailable)';
+        
+        const statusIndicator = document.getElementById('connection-status');
+        if (statusIndicator) {
+            statusIndicator.textContent = '🟡 HTTP Only';
+            statusIndicator.style.color = '#ffc107';
+        }
+        
+        // Start polling for new messages
+        startPolling();
     }
+}
+
+// Function to poll for new messages when WebSocket is unavailable
+function startPolling() {
+    if (pollInterval) {
+        return; // Already polling
+    }
+    
+    console.log('Starting HTTP polling for new messages...');
+    pollInterval = setInterval(function() {
+        fetchNewMessages();
+    }, POLL_INTERVAL_MS);
+    
+    // Poll immediately
+    fetchNewMessages();
+}
+
+function stopPolling() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        console.log('Stopped HTTP polling');
+    }
+}
+
+// Function to fetch new messages via HTTP
+function fetchNewMessages() {
+    const url = lastMessageTimestamp 
+        ? `${getMessagesUrl}?since=${encodeURIComponent(lastMessageTimestamp)}`
+        : getMessagesUrl;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(msg => {
+                // Check if message already exists
+                const existingMsg = chatMessages.querySelector(`[data-message-id="${msg.id}"]`);
+                if (!existingMsg) {
+                    displayMessage(msg.content, msg.sender_id, msg.timestamp, msg.id, false);
+                    lastMessageTimestamp = msg.timestamp;
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching new messages:', error);
+    });
+}
+
+// Function to display a message in the chat
+function displayMessage(content, senderId, timestamp, messageId, isOwn) {
+    // Remove "no messages" placeholder if it exists
+    const emptyMessage = chatMessages.querySelector('div[style*="text-align: center"]');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    // Create message element
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+    if (messageId) {
+        messageDiv.setAttribute('data-message-id', messageId);
+    }
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = content;
+    
+    const time = document.createElement('div');
+    time.className = 'message-time';
+    const msgTimestamp = timestamp ? new Date(timestamp) : new Date();
+    time.textContent = msgTimestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
+                       ' • ' + msgTimestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    messageDiv.appendChild(bubble);
+    messageDiv.appendChild(time);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // Auto-resize textarea
@@ -321,25 +433,31 @@ messageInput.addEventListener('input', function() {
 // Scroll to bottom on load
 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-// Initialize connection when page loads
+// Initialize last message timestamp from existing messages
+const existingMessages = chatMessages.querySelectorAll('[data-message-id]');
+if (existingMessages.length > 0) {
+    const lastMsg = existingMessages[existingMessages.length - 1];
+    const lastMsgTime = lastMsg.querySelector('.message-time');
+    if (lastMsgTime) {
+        // We'll update this when we get the actual timestamp from the server
+    }
+}
+
+// Initialize connection when page loads (non-blocking)
 connectWebSocket();
+
+// Also start polling as a fallback (will be stopped if WebSocket connects)
+setTimeout(() => {
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        startPolling();
+    }
+}, 1000);
 
 chatForm.addEventListener('submit', function(e) {
     e.preventDefault();
     
     const message = messageInput.value.trim();
     if (!message) return;
-    
-    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-        alert('Not connected. Please wait for connection...');
-        return;
-    }
-    
-    // Remove "no messages" placeholder if it exists
-    const emptyMessage = chatMessages.querySelector('div[style*="text-align: center"]');
-    if (emptyMessage) {
-        emptyMessage.remove();
-    }
     
     // Store message text before clearing input
     const messageText = message;
@@ -354,7 +472,7 @@ chatForm.addEventListener('submit', function(e) {
     // Show message immediately (optimistic update) with a temporary marker
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message own';
-    messageDiv.setAttribute('data-temp-id', tempId); // Mark as temporary with unique ID
+    messageDiv.setAttribute('data-temp-id', tempId);
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
     bubble.textContent = messageText;
@@ -368,25 +486,72 @@ chatForm.addEventListener('submit', function(e) {
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
-    // Track this optimistic message by content
+    // Track this optimistic message
     pendingMessageIds.set(messageText, tempId);
     
+    // Disable send button temporarily while sending
     sendButton.disabled = true;
+    sendButton.textContent = 'Sending...';
     
-    try {
-        chatSocket.send(JSON.stringify({
-            'message': messageText,
-            'username': '{{ user.username }}'
-        }));
-    } catch (error) {
+    // Send via HTTP POST (always works, regardless of WebSocket connection)
+    const formData = new FormData();
+    formData.append('message', messageText);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch(sendMessageUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        sendButton.disabled = false;
+        sendButton.textContent = 'Send';
+        
+        if (data.success) {
+            // Update the optimistic message with real data
+            messageDiv.removeAttribute('data-temp-id');
+            if (data.message_id) {
+                messageDiv.setAttribute('data-message-id', data.message_id);
+            }
+            if (data.timestamp) {
+                const timestamp = new Date(data.timestamp);
+                time.textContent = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + 
+                                   ' • ' + timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            pendingMessageIds.delete(messageText);
+            lastMessageTimestamp = data.timestamp;
+            
+            // Also try to send via WebSocket if connected (for real-time delivery to other user)
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                try {
+                    chatSocket.send(JSON.stringify({
+                        'message': messageText,
+                        'username': '{{ user.username }}'
+                    }));
+                } catch (error) {
+                    console.log('WebSocket send failed, but message saved via HTTP:', error);
+                }
+            }
+        } else {
+            // Error occurred, remove optimistic message
+            alert('Error: ' + (data.error || 'Failed to send message'));
+            messageDiv.remove();
+            pendingMessageIds.delete(messageText);
+        }
+    })
+    .catch(error => {
         console.error('Error sending message:', error);
+        sendButton.disabled = false;
+        sendButton.textContent = 'Send';
         alert('Failed to send message. Please try again.');
         // Remove the optimistic message if send failed
         messageDiv.remove();
         pendingMessageIds.delete(messageText);
-    }
-    
-    sendButton.disabled = false;
+    });
 });
 </script>
 {% endblock %}

@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q, Max
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from accounts.models import StudentProfile
 from .models import ChatRequest, ChatRoom, Message
 from .forms import ChatRequestForm
@@ -257,4 +259,117 @@ def chat_room_detail(request, room_name):
         'other_participant': other_participant,
         'messages': messages_list,
         'profile': profile
+    })
+
+@login_required
+def send_message(request, room_name):
+    """Send a message via HTTP POST (always works, even without WebSocket)"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'You must have a student profile to send messages.'}, status=400)
+    
+    chat_room = get_object_or_404(ChatRoom, room_name=room_name, is_active=True)
+    
+    # Verify user is a participant
+    if not chat_room.has_participant(profile):
+        return JsonResponse({'error': 'You do not have access to this chat room.'}, status=403)
+    
+    if request.method == 'POST':
+        message_content = request.POST.get('message', '').strip()
+        
+        if not message_content:
+            return JsonResponse({'error': 'Message cannot be empty.'}, status=400)
+        
+        if len(message_content) > 2000:
+            return JsonResponse({'error': 'Message is too long (max 2000 characters).'}, status=400)
+        
+        # Save message to database
+        message = Message.objects.create(
+            room=chat_room,
+            sender=profile,
+            content=message_content
+        )
+        
+        # Update room's updated_at timestamp
+        chat_room.save()
+        
+        # Broadcast message via WebSocket channel layer (for real-time delivery)
+        try:
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                room_group_name = f'chat_{room_name}'
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': message_content,
+                        'username': request.user.username,
+                        'sender_name': profile.name,
+                        'sender_id': profile.id,
+                        'timestamp': message.timestamp.isoformat(),
+                        'message_id': message.id,
+                    }
+                )
+        except Exception as e:
+            # If channel layer fails, message is still saved - just log the error
+            print(f"Failed to broadcast message via WebSocket: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message_id': message.id,
+            'message': message_content,
+            'timestamp': message.timestamp.isoformat(),
+            'sender_id': profile.id,
+            'sender_name': profile.name
+        })
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def get_new_messages(request, room_name):
+    """Get new messages since a given timestamp (for polling when WebSocket is unavailable)"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    chat_room = get_object_or_404(ChatRoom, room_name=room_name, is_active=True)
+    
+    # Verify user is a participant
+    if not chat_room.has_participant(profile):
+        return JsonResponse({'error': 'Access denied.'}, status=403)
+    
+    # Get timestamp from query parameter (optional)
+    since = request.GET.get('since')
+    
+    if since:
+        from django.utils.dateparse import parse_datetime
+        try:
+            since_dt = parse_datetime(since)
+            new_messages = chat_room.messages.filter(
+                timestamp__gt=since_dt
+            ).exclude(sender=profile).select_related('sender').order_by('timestamp')
+        except (ValueError, TypeError):
+            new_messages = chat_room.messages.exclude(sender=profile).select_related('sender').order_by('-timestamp')[:10]
+    else:
+        # Get last 10 messages
+        new_messages = chat_room.messages.exclude(sender=profile).select_related('sender').order_by('-timestamp')[:10]
+    
+    # Mark as read
+    for msg in new_messages:
+        if not msg.is_read:
+            msg.mark_as_read()
+    
+    messages_data = [{
+        'id': msg.id,
+        'content': msg.content,
+        'sender_id': msg.sender.id,
+        'sender_name': msg.sender.name,
+        'timestamp': msg.timestamp.isoformat(),
+    } for msg in reversed(new_messages)]  # Reverse to get chronological order
+    
+    return JsonResponse({
+        'messages': messages_data,
+        'count': len(messages_data)
     })
