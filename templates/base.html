@@ -67,9 +67,17 @@
                 <li><a href="/">Home</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="#">Study Sessions</a></li>
-                    <li><a href="{% url 'chat:room_list' %}">Chats</a></li>
+                    <li>
+                        <a href="{% url 'chat:room_list' %}" style="position: relative;">
+                            Chats
+                            {% if user.student_profile.received_chat_requests.filter(status='pending').count > 0 %}
+                                <span style="position: absolute; top: -8px; right: -8px; background: #dc3545; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; font-weight: bold;">
+                                    {{ user.student_profile.received_chat_requests.filter(status='pending').count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </li>
                     <li><a href="{% url 'chat:call_history' %}">Calls</a></li>
-                    <li><a href="{% url 'chat:request_list' %}">Requests</a></li>
                     <li><a href="{% url 'accounts:nearby' %}">Nearby</a></li>
                     <li><a href="{% url 'accounts:profile' %}">Profile</a></li>
                     <li><a href="{% url 'accounts:profile_list' %}">Browse</a></li>

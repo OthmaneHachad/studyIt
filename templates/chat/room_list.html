@@ -4,12 +4,7 @@
 
 {% block content %}
 <div style="max-width: 1000px; margin: 2rem auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h1 style="color: #003057;">My Chats</h1>
-        <a href="{% url 'chat:request_list' %}" style="background: #003057; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 5px; font-weight: 500;">
-            Chat Requests
-        </a>
-    </div>
+    <h1 style="color: #003057; margin-bottom: 2rem;">My Chats</h1>
     
     {% if messages %}
         {% for message in messages %}
@@ -17,6 +12,57 @@
                 {{ message }}
             </div>
         {% endfor %}
+    {% endif %}
+    
+    <!-- Pending Chat Requests Section -->
+    {% if incoming_requests %}
+        <div style="margin-bottom: 2rem;">
+            <h2 style="color: #003057; font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📬 Pending Requests</span>
+                <span style="background: #dc3545; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: bold;">
+                    {{ incoming_requests|length }}
+                </span>
+            </h2>
+            <div style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                {% for chat_request in incoming_requests %}
+                    <div style="border: 2px solid #ffc107; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; background: linear-gradient(to right, #fff9e6, white);">
+                        <div style="margin-bottom: 1rem;">
+                            <h3 style="color: #003057; margin-bottom: 0.5rem; font-size: 1.125rem;">
+                                {{ chat_request.sender.name }}
+                                <span style="background: #ffc107; color: #000; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                    NEW
+                                </span>
+                            </h3>
+                            <p style="color: #666; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                                "{{ chat_request.message }}"
+                            </p>
+                            <p style="color: #999; font-size: 0.85rem;">
+                                Sent {{ chat_request.created_at|timesince }} ago
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <form method="post" action="{% url 'chat:accept_request' chat_request.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" style="background: #28a745; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                                    ✓ Accept
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'chat:reject_request' chat_request.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+                                    ✕ Decline
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Active Chats Section -->
+    {% if chat_rooms %}
+        <h2 style="color: #003057; font-size: 1.25rem; margin-bottom: 1rem;">💬 Active Chats</h2>
     {% endif %}
     
     {% if chat_rooms %}
@@ -62,5 +108,82 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle accept/reject requests with AJAX for better UX
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form[action*="accept_request"], form[action*="reject_request"]');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const url = form.action;
+            const isAccept = url.includes('accept_request');
+            
+            // Disable buttons
+            const buttons = form.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the request card with animation
+                    const requestCard = form.closest('[style*="border: 2px solid #ffc107"]');
+                    if (requestCard) {
+                        requestCard.style.transition = 'all 0.3s ease-out';
+                        requestCard.style.opacity = '0';
+                        requestCard.style.transform = 'translateX(-20px)';
+                        
+                        setTimeout(() => {
+                            requestCard.remove();
+                            
+                            // Update badge count
+                            const badge = document.querySelector('[style*="background: #dc3545"]');
+                            const remainingRequests = document.querySelectorAll('[style*="border: 2px solid #ffc107"]');
+                            
+                            if (remainingRequests.length === 0) {
+                                // Remove entire requests section if no more requests
+                                const requestsSection = document.querySelector('h2').closest('div');
+                                if (requestsSection) {
+                                    requestsSection.style.transition = 'all 0.3s ease-out';
+                                    requestsSection.style.opacity = '0';
+                                    setTimeout(() => requestsSection.remove(), 300);
+                                }
+                            } else if (badge) {
+                                badge.textContent = remainingRequests.length;
+                            }
+                            
+                            // Reload page if accepted to show new chat
+                            if (isAccept) {
+                                window.location.reload();
+                            }
+                        }, 300);
+                    }
+                } else {
+                    alert(data.error || 'An error occurred');
+                    buttons.forEach(btn => btn.disabled = false);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to process request. Please try again.');
+                buttons.forEach(btn => btn.disabled = false);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
 

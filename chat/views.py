@@ -205,6 +205,12 @@ def chat_room_list(request):
         messages.error(request, 'You must have a student profile to view chats.')
         return redirect('accounts:profile')
     
+    # Get pending incoming chat requests
+    incoming_requests = ChatRequest.objects.filter(
+        recipient=profile,
+        status='pending'
+    ).select_related('sender').order_by('-created_at')
+    
     # Get all chat rooms where user is a participant
     chat_rooms = ChatRoom.objects.filter(
         Q(participant1=profile) | Q(participant2=profile),
@@ -221,6 +227,7 @@ def chat_room_list(request):
     
     return render(request, 'chat/room_list.html', {
         'chat_rooms': chat_rooms,
+        'incoming_requests': incoming_requests,
         'profile': profile
     })
 
