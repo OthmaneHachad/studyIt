@@ -150,6 +150,11 @@ class StudentProfile(models.Model):
             score += 2
         
         return score
+    
+    @property
+    def pending_request_count(self):
+        """Get count of pending incoming chat requests"""
+        return self.received_chat_requests.filter(status='pending').count()
 
 class TAProfile(models.Model):
     """Profile model for TA/Session Host users"""

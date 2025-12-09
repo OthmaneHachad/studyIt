@@ -70,9 +70,9 @@
                     <li>
                         <a href="{% url 'chat:room_list' %}" style="position: relative;">
                             Chats
-                            {% if user.student_profile.received_chat_requests.filter(status='pending').count > 0 %}
+                            {% if user.student_profile.pending_request_count > 0 %}
                                 <span style="position: absolute; top: -8px; right: -8px; background: #dc3545; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; font-weight: bold;">
-                                    {{ user.student_profile.received_chat_requests.filter(status='pending').count }}
+                                    {{ user.student_profile.pending_request_count }}
                                 </span>
                             {% endif %}
                         </a>
