@@ -147,3 +147,244 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat_room.save()
         return message
 
+
+class CallSignalingConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for handling WebRTC signaling for voice/video calls
+    """
+    
+    async def connect(self):
+        """Accept WebSocket connection for call signaling"""
+        self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.call_group_name = f'call_{self.room_name}'
+        self.user = self.scope['user']
+        
+        # Verify user is authenticated and has access to this room
+        if not self.user.is_authenticated:
+            await self.close()
+            return
+        
+        # Check if user has access to this room
+        has_access = await self.check_room_access()
+        if not has_access:
+            await self.close()
+            return
+
+        # Join call signaling group
+        await self.channel_layer.group_add(
+            self.call_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+        
+        # Notify user is ready for calls
+        await self.send(text_data=json.dumps({
+            'type': 'connection_established',
+            'message': 'Connected to call signaling server'
+        }))
+
+    async def disconnect(self, close_code):
+        """Leave call signaling group"""
+        # Notify other user if in active call
+        await self.channel_layer.group_send(
+            self.call_group_name,
+            {
+                'type': 'user_disconnected',
+                'username': self.user.username,
+            }
+        )
+        
+        await self.channel_layer.group_discard(
+            self.call_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        """Receive signaling messages from WebSocket"""
+        try:
+            data = json.loads(text_data)
+            message_type = data.get('type')
+            
+            # Get user profile
+            user_profile = await self.get_user_profile()
+            if not user_profile:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': 'User profile not found'
+                }))
+                return
+            
+            # Handle different message types
+            if message_type == 'call_offer':
+                # Initiating a call - send WebRTC offer
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_offer',
+                        'offer': data.get('offer'),
+                        'call_type': data.get('call_type', 'video'),
+                        'caller_id': user_profile.id,
+                        'caller_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+            
+            elif message_type == 'call_answer':
+                # Answering a call - send WebRTC answer
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_answer',
+                        'answer': data.get('answer'),
+                        'answerer_id': user_profile.id,
+                        'answerer_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+            
+            elif message_type == 'ice_candidate':
+                # Exchange ICE candidates for NAT traversal
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'ice_candidate',
+                        'candidate': data.get('candidate'),
+                        'sender_id': user_profile.id,
+                        'username': self.user.username,
+                    }
+                )
+            
+            elif message_type == 'call_reject':
+                # Rejecting a call
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_rejected',
+                        'rejector_id': user_profile.id,
+                        'rejector_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+            
+            elif message_type == 'call_end':
+                # Ending a call
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_ended',
+                        'ender_id': user_profile.id,
+                        'ender_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+            
+            elif message_type == 'call_cancel':
+                # Cancelling a call before it's answered
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_cancelled',
+                        'canceller_id': user_profile.id,
+                        'canceller_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+                
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid JSON format'
+            }))
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': str(e)
+            }))
+
+    # Handler methods for group messages
+    async def call_offer(self, event):
+        """Forward call offer to other participant"""
+        # Don't send to self
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('caller_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'call_offer',
+                'offer': event.get('offer'),
+                'call_type': event.get('call_type'),
+                'caller_id': event.get('caller_id'),
+                'caller_name': event.get('caller_name'),
+            }))
+
+    async def call_answer(self, event):
+        """Forward call answer to caller"""
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('answerer_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'call_answer',
+                'answer': event.get('answer'),
+                'answerer_id': event.get('answerer_id'),
+                'answerer_name': event.get('answerer_name'),
+            }))
+
+    async def ice_candidate(self, event):
+        """Forward ICE candidate to other participant"""
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('sender_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'ice_candidate',
+                'candidate': event.get('candidate'),
+            }))
+
+    async def call_rejected(self, event):
+        """Forward call rejection to caller"""
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('rejector_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'call_rejected',
+                'rejector_name': event.get('rejector_name'),
+            }))
+
+    async def call_ended(self, event):
+        """Forward call end to other participant"""
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('ender_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'call_ended',
+                'ender_name': event.get('ender_name'),
+            }))
+
+    async def call_cancelled(self, event):
+        """Forward call cancellation to receiver"""
+        user_profile = await self.get_user_profile()
+        if user_profile and user_profile.id != event.get('canceller_id'):
+            await self.send(text_data=json.dumps({
+                'type': 'call_cancelled',
+                'canceller_name': event.get('canceller_name'),
+            }))
+
+    async def user_disconnected(self, event):
+        """Notify when other user disconnects"""
+        if event.get('username') != self.user.username:
+            await self.send(text_data=json.dumps({
+                'type': 'user_disconnected',
+                'message': 'Other user disconnected'
+            }))
+    
+    @database_sync_to_async
+    def check_room_access(self):
+        """Check if user has access to this room"""
+        try:
+            user_profile = StudentProfile.objects.get(user=self.user)
+            chat_room = ChatRoom.objects.get(room_name=self.room_name, is_active=True)
+            return chat_room.has_participant(user_profile)
+        except (StudentProfile.DoesNotExist, ChatRoom.DoesNotExist):
+            return False
+    
+    @database_sync_to_async
+    def get_user_profile(self):
+        """Get user's student profile"""
+        try:
+            return StudentProfile.objects.get(user=self.user)
+        except StudentProfile.DoesNotExist:
+            return None

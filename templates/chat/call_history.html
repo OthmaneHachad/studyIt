@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Calls - StudyIt{% endblock %}
+
+{% block extra_css %}
+<style>
+    .join-call-btn {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        transition: all 0.2s;
+    }
+    
+    .join-call-btn:hover {
+        background: #218838;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
+    
+    .active-call-card {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        background: linear-gradient(to right, #f0f9ff, white);
+        animation: pulse-border 2s infinite;
+    }
+    
+    @keyframes pulse-border {
+        0%, 100% {
+            border-left: 4px solid #28a745;
+        }
+        50% {
+            border-left: 4px solid #20c997;
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 2rem auto; padding: 0 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="margin: 0;">Calls</h1>
+        <a href="{% url 'chat:room_list' %}" style="color: #003057; text-decoration: none; font-weight: 500;">
+            ← Back to Chats
+        </a>
+    </div>
+    
+    <!-- Active Calls Section -->
+    {% if active_calls %}
+    <div style="margin-bottom: 2rem;">
+        <h2 style="color: #003057; margin-bottom: 1rem; font-size: 1.25rem;">🔴 Active Calls</h2>
+        <div style="background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+            {% for call in active_calls %}
+                <div class="active-call-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #dc3545; font-size: 1.5rem; animation: pulse 2s infinite;">🔴</span>
+                                <span style="font-weight: 600; font-size: 1.125rem;">{{ call.other_user.name }}</span>
+                                {% if call.is_outgoing %}
+                                    <span style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        YOU CALLED
+                                    </span>
+                                {% else %}
+                                    <span style="background: #fff3cd; color: #856404; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        CALLING YOU
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.875rem; color: #666;">
+                                <span>{{ call.get_call_type_display }}</span>
+                                •
+                                <span style="color: #28a745; font-weight: 600;">In Progress</span>
+                                •
+                                <span>Started {{ call.initiated_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{% url 'chat:room_detail' call.chat_room.room_name %}?auto_join=true" class="join-call-btn">
+                                📞 Join Call
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Call History Section -->
+    <h2 style="color: #003057; margin-bottom: 1rem; font-size: 1.25rem;">📋 Call History</h2>
+    
+    {% if calls %}
+        <div style="background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+            {% for call in calls %}
+                <div style="padding: 1.5rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            {% if call.is_outgoing %}
+                                <span style="color: #28a745;">📞 Outgoing</span>
+                            {% else %}
+                                <span style="color: #007bff;">📞 Incoming</span>
+                            {% endif %}
+                            <span style="font-weight: 600;">{{ call.other_user.name }}</span>
+                        </div>
+                        <div style="font-size: 0.875rem; color: #666;">
+                            <span>{{ call.get_call_type_display }}</span>
+                            •
+                            <span style="
+                                {% if call.status == 'accepted' or call.status == 'ended' %}color: #28a745;
+                                {% elif call.status == 'rejected' %}color: #dc3545;
+                                {% elif call.status == 'missed' %}color: #ffc107;
+                                {% elif call.status == 'cancelled' %}color: #6c757d;
+                                {% endif %}
+                            ">{{ call.get_status_display }}</span>
+                            {% if call.duration_seconds %}
+                                • Duration: {{ call.get_duration_display }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="text-align: right; color: #999; font-size: 0.875rem;">
+                        {{ call.initiated_at|date:"M d, Y" }}<br>
+                        {{ call.initiated_at|date:"g:i A" }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <p style="color: #999; font-size: 1.125rem;">No call history yet</p>
+            <p style="color: #999;">Start a call with a classmate to see your call history here.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

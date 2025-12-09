@@ -6,7 +6,7 @@ from django.db.models import Q, Max
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from accounts.models import StudentProfile
-from .models import ChatRequest, ChatRoom, Message
+from .models import ChatRequest, ChatRoom, Message, Call
 from .forms import ChatRequestForm
 
 @login_required
@@ -372,4 +372,244 @@ def get_new_messages(request, room_name):
     return JsonResponse({
         'messages': messages_data,
         'count': len(messages_data)
+    })
+
+# Call-related views
+
+@login_required
+def initiate_call(request, room_name):
+    """Initiate a voice/video call in a chat room"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    chat_room = get_object_or_404(ChatRoom, room_name=room_name, is_active=True)
+    
+    # Verify user is a participant
+    if not chat_room.has_participant(profile):
+        return JsonResponse({'error': 'Access denied.'}, status=403)
+    
+    if request.method == 'POST':
+        call_type = request.POST.get('call_type', 'video')
+        
+        if call_type not in ['audio', 'video']:
+            return JsonResponse({'error': 'Invalid call type.'}, status=400)
+        
+        # Get the other participant
+        other_participant = chat_room.get_other_participant(profile)
+        
+        # Check if there's already an active call in this room
+        active_call = Call.objects.filter(
+            chat_room=chat_room,
+            status__in=['initiated', 'ringing', 'accepted']
+        ).first()
+        
+        if active_call:
+            return JsonResponse({'error': 'There is already an active call in this room.'}, status=400)
+        
+        # Create the call
+        call = Call.objects.create(
+            caller=profile,
+            receiver=other_participant,
+            chat_room=chat_room,
+            call_type=call_type,
+            status='initiated'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'call_id': call.id,
+            'call_type': call_type,
+            'receiver_name': other_participant.name,
+            'message': f'{call_type.capitalize()} call initiated'
+        })
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def end_call(request, call_id):
+    """End an active call"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    call = get_object_or_404(Call, id=call_id)
+    
+    # Verify user is part of this call
+    if call.caller != profile and call.receiver != profile:
+        return JsonResponse({'error': 'Access denied.'}, status=403)
+    
+    if request.method == 'POST':
+        from django.utils import timezone
+        
+        # Only end if call is active
+        if call.status in ['initiated', 'ringing', 'accepted']:
+            call.ended_at = timezone.now()
+            call.status = 'ended'
+            
+            # Calculate duration if call was accepted
+            if call.status == 'accepted' and call.accepted_at:
+                call.calculate_duration()
+            
+            call.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Call ended',
+                'duration': call.get_duration_display()
+            })
+        else:
+            return JsonResponse({'error': 'Call is not active.'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def accept_call(request, call_id):
+    """Accept an incoming call"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    call = get_object_or_404(Call, id=call_id)
+    
+    # Verify user is the receiver
+    if call.receiver != profile:
+        return JsonResponse({'error': 'You are not the receiver of this call.'}, status=403)
+    
+    if request.method == 'POST':
+        if call.can_be_answered():
+            from django.utils import timezone
+            call.status = 'accepted'
+            call.accepted_at = timezone.now()
+            call.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Call accepted',
+                'call_id': call.id
+            })
+        else:
+            return JsonResponse({'error': 'Call cannot be answered.'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def reject_call(request, call_id):
+    """Reject an incoming call"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    call = get_object_or_404(Call, id=call_id)
+    
+    # Verify user is the receiver
+    if call.receiver != profile:
+        return JsonResponse({'error': 'You are not the receiver of this call.'}, status=403)
+    
+    if request.method == 'POST':
+        if call.can_be_answered():
+            from django.utils import timezone
+            call.status = 'rejected'
+            call.ended_at = timezone.now()
+            call.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Call rejected'
+            })
+        else:
+            return JsonResponse({'error': 'Call cannot be rejected.'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def cancel_call(request, call_id):
+    """Cancel an outgoing call before it's answered"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    call = get_object_or_404(Call, id=call_id)
+    
+    # Verify user is the caller
+    if call.caller != profile:
+        return JsonResponse({'error': 'You are not the caller of this call.'}, status=403)
+    
+    if request.method == 'POST':
+        if call.can_be_answered():
+            from django.utils import timezone
+            call.status = 'cancelled'
+            call.ended_at = timezone.now()
+            call.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Call cancelled'
+            })
+        else:
+            return JsonResponse({'error': 'Call cannot be cancelled.'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+@login_required
+def call_history(request):
+    """View call history for the current user"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        messages.error(request, 'You must have a student profile to view call history.')
+        return redirect('accounts:profile')
+    
+    # Get active calls (initiated, ringing, or accepted)
+    active_calls = Call.objects.filter(
+        Q(caller=profile) | Q(receiver=profile),
+        status__in=['initiated', 'ringing', 'accepted']
+    ).select_related('caller', 'receiver', 'chat_room').order_by('-initiated_at')
+    
+    # Get all past calls (ended, rejected, missed, cancelled)
+    past_calls = Call.objects.filter(
+        Q(caller=profile) | Q(receiver=profile),
+        status__in=['ended', 'rejected', 'missed', 'cancelled']
+    ).select_related('caller', 'receiver', 'chat_room').order_by('-initiated_at')[:50]
+    
+    # Add additional info for each call
+    for call in active_calls:
+        call.other_user = call.receiver if call.caller == profile else call.caller
+        call.is_outgoing = call.caller == profile
+    
+    for call in past_calls:
+        call.other_user = call.receiver if call.caller == profile else call.caller
+        call.is_outgoing = call.caller == profile
+    
+    return render(request, 'chat/call_history.html', {
+        'active_calls': active_calls,
+        'calls': past_calls,
+        'profile': profile
+    })
+
+@login_required
+def get_call_status(request, call_id):
+    """Get current status of a call (for polling)"""
+    try:
+        profile = request.user.student_profile
+    except StudentProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found.'}, status=400)
+    
+    call = get_object_or_404(Call, id=call_id)
+    
+    # Verify user is part of this call
+    if call.caller != profile and call.receiver != profile:
+        return JsonResponse({'error': 'Access denied.'}, status=403)
+    
+    return JsonResponse({
+        'call_id': call.id,
+        'status': call.status,
+        'call_type': call.call_type,
+        'is_active': call.is_active(),
+        'duration': call.get_duration_display() if call.duration_seconds else None
     })

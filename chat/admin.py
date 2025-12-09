@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatRequest, ChatRoom, Message
+from .models import ChatRequest, ChatRoom, Message, Call
 
 @admin.register(ChatRequest)
 class ChatRequestAdmin(admin.ModelAdmin):
@@ -25,3 +25,14 @@ class MessageAdmin(admin.ModelAdmin):
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
     content_preview.short_description = 'Content'
+
+@admin.register(Call)
+class CallAdmin(admin.ModelAdmin):
+    list_display = ['caller', 'receiver', 'call_type', 'status', 'initiated_at', 'duration_display']
+    list_filter = ['call_type', 'status', 'initiated_at']
+    search_fields = ['caller__name', 'receiver__name']
+    readonly_fields = ['initiated_at', 'accepted_at', 'ended_at', 'duration_seconds']
+    
+    def duration_display(self, obj):
+        return obj.get_duration_display()
+    duration_display.short_description = 'Duration'

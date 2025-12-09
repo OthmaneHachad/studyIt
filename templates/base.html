@@ -68,6 +68,7 @@
                 {% if user.is_authenticated %}
                     <li><a href="#">Study Sessions</a></li>
                     <li><a href="{% url 'chat:room_list' %}">Chats</a></li>
+                    <li><a href="{% url 'chat:call_history' %}">Calls</a></li>
                     <li><a href="{% url 'chat:request_list' %}">Requests</a></li>
                     <li><a href="{% url 'accounts:nearby' %}">Nearby</a></li>
                     <li><a href="{% url 'accounts:profile' %}">Profile</a></li>

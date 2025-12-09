@@ -153,3 +153,90 @@ class Message(models.Model):
             self.is_read = True
             self.read_at = timezone.now()
             self.save()
+
+class Call(models.Model):
+    """Model for voice/video calls between students"""
+    CALL_TYPE_CHOICES = [
+        ('audio', 'Audio Call'),
+        ('video', 'Video Call'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('initiated', 'Initiated'),
+        ('ringing', 'Ringing'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('ended', 'Ended'),
+        ('missed', 'Missed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    caller = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name='calls_made'
+    )
+    receiver = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name='calls_received'
+    )
+    chat_room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        related_name='calls',
+        help_text="The chat room this call is associated with"
+    )
+    call_type = models.CharField(
+        max_length=10,
+        choices=CALL_TYPE_CHOICES,
+        default='video'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='initiated'
+    )
+    initiated_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.IntegerField(null=True, blank=True, help_text="Call duration in seconds")
+    
+    class Meta:
+        ordering = ['-initiated_at']
+        indexes = [
+            models.Index(fields=['caller', 'status']),
+            models.Index(fields=['receiver', 'status']),
+            models.Index(fields=['chat_room', '-initiated_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_call_type_display()} call from {self.caller.name} to {self.receiver.name} - {self.get_status_display()}"
+    
+    def calculate_duration(self):
+        """Calculate call duration in seconds"""
+        if self.accepted_at and self.ended_at:
+            delta = self.ended_at - self.accepted_at
+            self.duration_seconds = int(delta.total_seconds())
+            return self.duration_seconds
+        return 0
+    
+    def get_duration_display(self):
+        """Get human-readable duration"""
+        if not self.duration_seconds:
+            return "N/A"
+        
+        minutes = self.duration_seconds // 60
+        seconds = self.duration_seconds % 60
+        
+        if minutes > 0:
+            return f"{minutes}m {seconds}s"
+        return f"{seconds}s"
+    
+    def is_active(self):
+        """Check if call is currently active"""
+        return self.status in ['initiated', 'ringing', 'accepted']
+    
+    def can_be_answered(self):
+        """Check if call can be answered"""
+        return self.status in ['initiated', 'ringing']
