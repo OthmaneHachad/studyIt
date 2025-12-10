@@ -1018,16 +1018,6 @@
     // WebRTC Voice/Video Call Implementation
     // ============================================
 
-    // Call state variables
-    let callSignalingSocket = null;
-    let peerConnection = null;
-    let localStream = null;
-    let remoteStream = null;
-    let currentCallId = null;
-    let currentCallType = null;
-    let callStartTime = null;
-    let callDurationInterval = null;
-    let isCallInitiator = false;
 
     // WebRTC configuration (using Google's public STUN servers)
     const rtcConfiguration = {
@@ -1063,6 +1053,25 @@
     // Store pending incoming call data
     let pendingIncomingCall = null;
     let activeCallInRoom = false;
+
+    // WebRTC and call state variables
+    let callSignalingSocket = null;
+    let peerConnection = null;
+    let localStream = null;
+    let remoteStream = null;
+    let currentCallId = null;
+    let currentCallType = null;
+    let isCallInitiator = false;
+    let callStartTime = null;
+    let callDurationInterval = null;
+
+    // STUN servers for NAT traversal
+    const iceServers = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
 
     // Initialize call signaling WebSocket
     function initCallSignaling() {
@@ -1164,6 +1173,106 @@
             // Try to reconnect after a delay
             setTimeout(initCallSignaling, 3000);
         };
+    }
+
+    // Setup WebRTC peer connection
+    async function setupPeerConnection() {
+        try {
+            peerConnection = new RTCPeerConnection(iceServers);
+
+            // Get user media
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: currentCallType === 'video',
+                audio: true
+            });
+
+            // Add local stream to peer connection
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            // Display local video
+            localVideo.srcObject = localStream;
+
+            // Handle remote stream
+            peerConnection.ontrack = (event) => {
+                if (!remoteStream) {
+                    remoteStream = new MediaStream();
+                    remoteVideo.srcObject = remoteStream;
+                }
+                remoteStream.addTrack(event.track);
+            };
+
+            // Handle ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && callSignalingSocket && callSignalingSocket.readyState === WebSocket.OPEN) {
+                    callSignalingSocket.send(JSON.stringify({
+                        type: 'ice_candidate',
+                        candidate: event.candidate,
+                        room_name: '{{ chat_room.room_name }}'
+                    }));
+                }
+            };
+
+            // Handle connection state changes
+            peerConnection.onconnectionstatechange = () => {
+                console.log('Connection state:', peerConnection.connectionState);
+                if (peerConnection.connectionState === 'connected') {
+                    callStatusText.textContent = 'Connected';
+                } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
+                    callStatusText.textContent = 'Connection lost';
+                }
+            };
+
+            return peerConnection;
+        } catch (error) {
+            console.error('Error setting up peer connection:', error);
+            alert('Failed to access camera/microphone. Please check permissions.');
+            throw error;
+        }
+    }
+
+    // Handle incoming call
+    function handleIncomingCall(data) {
+        console.log('Incoming call from:', data.caller_name);
+
+        pendingIncomingCall = {
+            call_id: data.call_id,
+            caller_name: data.caller_name,
+            call_type: data.call_type,
+            offer: data.offer
+        };
+
+        // Show incoming call modal
+        document.getElementById('caller-name').textContent = data.caller_name;
+        document.getElementById('call-type-text').textContent = data.call_type === 'video' ? 'Video Call' : 'Audio Call';
+        incomingCallModal.style.display = 'flex';
+
+        // Also show banner
+        callNotificationText.textContent = `${data.caller_name} is calling...`;
+        callNotificationBanner.style.display = 'block';
+    }
+
+    // Handle call answer
+    async function handleCallAnswer(answer) {
+        try {
+            console.log('Received answer from receiver');
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            callStatusText.textContent = 'Connected';
+        } catch (error) {
+            console.error('Error handling answer:', error);
+        }
+    }
+
+    // Start call duration timer
+    function startCallDurationTimer() {
+        callStartTime = Date.now();
+        callDurationInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            callDurationDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
     }
 
     // Check for active calls on page load
