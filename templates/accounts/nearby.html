@@ -4,7 +4,8 @@
 
 {% block extra_head %}
 <!-- Leaflet CSS for maps -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 {% endblock %}
 
 {% block extra_css %}
@@ -14,7 +15,7 @@
         margin: 2rem auto;
         padding: 0 1rem;
     }
-    
+
     .nearby-header {
         display: flex;
         justify-content: space-between;
@@ -23,12 +24,12 @@
         flex-wrap: wrap;
         gap: 1rem;
     }
-    
+
     .nearby-header h1 {
         color: #003057;
         margin: 0;
     }
-    
+
     .edit-profile-btn {
         background: #003057;
         color: white;
@@ -38,11 +39,11 @@
         font-weight: 500;
         transition: background 0.2s;
     }
-    
+
     .edit-profile-btn:hover {
         background: #002040;
     }
-    
+
     .location-banner {
         background: linear-gradient(135deg, #003057 0%, #004d8c 100%);
         color: white;
@@ -53,23 +54,23 @@
         align-items: center;
         gap: 1rem;
     }
-    
+
     .location-icon {
         font-size: 2rem;
     }
-    
+
     .location-info h3 {
         margin: 0 0 0.25rem 0;
         font-size: 1rem;
         opacity: 0.9;
     }
-    
+
     .location-info p {
         margin: 0;
         font-size: 1.25rem;
         font-weight: 600;
     }
-    
+
     .no-location-warning {
         padding: 1.25rem;
         border: 2px solid #ffc107;
@@ -78,13 +79,13 @@
         border-radius: 10px;
         margin-bottom: 1.5rem;
     }
-    
+
     .no-location-warning a {
         color: #003057;
         font-weight: 600;
         margin-left: 0.25rem;
     }
-    
+
     /* Summary Cards */
     .summary-grid {
         display: grid;
@@ -92,43 +93,43 @@
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .summary-card {
         background: white;
         padding: 1.25rem;
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         text-align: center;
         border-left: 4px solid #003057;
     }
-    
+
     .summary-card.highlight {
         background: linear-gradient(135deg, #e8f4fd 0%, #d4e8f7 100%);
         border-left-color: #28a745;
     }
-    
+
     .summary-number {
         font-size: 2.5rem;
         font-weight: 700;
         color: #003057;
         line-height: 1;
     }
-    
+
     .summary-label {
         color: #6b7280;
         font-size: 0.9rem;
         margin-top: 0.5rem;
     }
-    
+
     /* Counts Section */
     .counts-section {
         background: white;
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         margin-bottom: 1.5rem;
     }
-    
+
     .section-title {
         color: #003057;
         font-size: 1.25rem;
@@ -137,13 +138,13 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .class-counts-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: 1rem;
     }
-    
+
     .class-count-card {
         border: 1px solid #e5e7eb;
         border-radius: 10px;
@@ -154,28 +155,28 @@
         align-items: center;
         transition: all 0.2s;
     }
-    
+
     .class-count-card:hover {
         border-color: #003057;
         background: #f0f7ff;
     }
-    
+
     .class-count-card.has-students {
         border-left: 4px solid #28a745;
     }
-    
+
     .class-info .class-code {
         font-weight: 700;
         color: #003057;
         font-size: 1.1rem;
     }
-    
+
     .class-info .class-name {
         font-size: 0.85rem;
         color: #6b7280;
         margin-top: 0.1rem;
     }
-    
+
     .class-count-badge {
         background: #003057;
         color: white;
@@ -186,45 +187,45 @@
         min-width: 50px;
         text-align: center;
     }
-    
+
     .class-count-badge.zero {
         background: #e5e7eb;
         color: #9ca3af;
     }
-    
+
     /* Classmates Section */
     .classmates-section {
         background: white;
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
-    
+
     .class-group {
         border-top: 1px solid #e5e7eb;
         padding-top: 1.25rem;
         margin-top: 1.25rem;
     }
-    
+
     .class-group:first-child {
         border-top: none;
         padding-top: 0;
         margin-top: 0;
     }
-    
+
     .class-group-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
     }
-    
+
     .class-group-title {
         font-weight: 700;
         color: #003057;
         font-size: 1.1rem;
     }
-    
+
     .class-group-count {
         background: #e8f4fd;
         color: #003057;
@@ -233,13 +234,13 @@
         font-size: 0.85rem;
         font-weight: 600;
     }
-    
+
     .classmates-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 0.75rem;
     }
-    
+
     .classmate-card {
         display: block;
         text-decoration: none;
@@ -250,31 +251,31 @@
         transition: all 0.2s;
         background: white;
     }
-    
+
     .classmate-card:hover {
         border-color: #003057;
-        box-shadow: 0 4px 12px rgba(0,48,87,0.15);
+        box-shadow: 0 4px 12px rgba(0, 48, 87, 0.15);
         transform: translateY(-2px);
     }
-    
+
     .classmate-name {
         font-weight: 600;
         color: #111827;
         font-size: 1rem;
     }
-    
+
     .classmate-year {
         color: #6b7280;
         font-size: 0.9rem;
         margin-top: 0.25rem;
     }
-    
+
     .classmate-actions {
         margin-top: 0.75rem;
         display: flex;
         gap: 0.5rem;
     }
-    
+
     .action-btn {
         padding: 0.35rem 0.75rem;
         border-radius: 5px;
@@ -285,12 +286,12 @@
         align-items: center;
         gap: 0.25rem;
     }
-    
+
     .action-btn.chat {
         background: #28a745;
         color: white;
     }
-    
+
     .empty-state {
         color: #6b7280;
         font-style: italic;
@@ -299,17 +300,17 @@
         background: #f8fafc;
         border-radius: 8px;
     }
-    
+
     @media (max-width: 640px) {
         .nearby-header {
             flex-direction: column;
             align-items: flex-start;
         }
-        
+
         .summary-grid {
             grid-template-columns: 1fr 1fr;
         }
-        
+
         .classmates-grid {
             grid-template-columns: 1fr;
         }
@@ -322,124 +323,129 @@
     <div class="nearby-header">
         <h1>👥 Nearby Classmates</h1>
         <div style="display: flex; gap: 0.5rem;">
-            <button id="refresh-location-btn" style="background: #4caf50; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <button id="refresh-location-btn"
+                style="background: #4caf50; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
                 <span id="refresh-icon">🛰️</span> Update GPS Location
             </button>
             <a href="{% url 'accounts:profile_edit' %}" class="edit-profile-btn">✏️ Edit Profile</a>
         </div>
     </div>
-    
+
     <!-- Map Section -->
     <section class="counts-section" style="margin-bottom: 1.5rem;">
         <h2 class="section-title">🗺️ Campus Map</h2>
         <div id="campus-map" style="height: 350px; border-radius: 10px; border: 1px solid #e5e7eb;"></div>
         <div id="map-status" style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;"></div>
     </section>
-    
+
     {% if current_location %}
-        <div class="location-banner">
-            <span class="location-icon">📍</span>
-            <div class="location-info">
-                <h3>Your Current Location</h3>
-                <p>{{ current_location.name }}</p>
-                {% if current_profile.has_gps_coordinates %}
-                    <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;">
-                        🛰️ GPS: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}
-                    </div>
-                {% endif %}
+    <div class="location-banner">
+        <span class="location-icon">📍</span>
+        <div class="location-info">
+            <h3>Your Current Location</h3>
+            <p>{{ current_location.name }}</p>
+            {% if current_profile.has_gps_coordinates %}
+            <div
+                style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;">
+                🛰️ GPS: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}
             </div>
+            {% endif %}
         </div>
+    </div>
     {% elif current_profile.has_gps_coordinates %}
-        <div class="location-banner" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);">
-            <span class="location-icon">🛰️</span>
-            <div class="location-info">
-                <h3>GPS Location Active</h3>
-                <p>Coordinates: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}</p>
-                <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem;">
-                    <a href="{% url 'accounts:profile_edit' %}" style="color: white; text-decoration: underline;">Select a campus location →</a>
-                </div>
+    <div class="location-banner" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);">
+        <span class="location-icon">🛰️</span>
+        <div class="location-info">
+            <h3>GPS Location Active</h3>
+            <p>Coordinates: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}</p>
+            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem;">
+                <a href="{% url 'accounts:profile_edit' %}" style="color: white; text-decoration: underline;">Select a
+                    campus location →</a>
             </div>
         </div>
-        
-        <!-- Summary Statistics -->
-        {% if user_classes_data %}
-            <div class="summary-grid">
-                <div class="summary-card highlight">
-                    <div class="summary-number">{{ unique_nearby_count|default:0 }}</div>
-                    <div class="summary-label">Unique Classmates Nearby</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-number">{{ user_classes_data|length }}</div>
-                    <div class="summary-label">Your Classes</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-number">{{ classes_with_students|default:0 }}</div>
-                    <div class="summary-label">Classes with Nearby Students</div>
-                </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if user_classes_data %}
+    <div class="summary-grid">
+        <div class="summary-card highlight">
+            <div class="summary-number">{{ unique_nearby_count|default:0 }}</div>
+            <div class="summary-label">Unique Classmates Nearby</div>
         </div>
+        <div class="summary-card">
+            <div class="summary-number">{{ user_classes_data|length }}</div>
+            <div class="summary-label">Your Classes</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-number">{{ classes_with_students|default:0 }}</div>
+            <div class="summary-label">Classes with Nearby Students</div>
+        </div>
+    </div>
     {% endif %}
-    
-        <!-- Counts by Class -->
-        <section class="counts-section">
-            <h2 class="section-title">📊 Students by Class at {{ current_location.name }}</h2>
-            {% if user_classes_data %}
-                <div class="class-counts-grid">
-                    {% for item in user_classes_data %}
-                        <div class="class-count-card {% if item.count > 0 %}has-students{% endif %}">
-                            <div class="class-info">
-                                <div class="class-code">{{ item.code }}</div>
-                                <div class="class-name">{{ item.name|truncatewords:5 }}</div>
-                                </div>
-                            <div class="class-count-badge {% if item.count == 0 %}zero{% endif %}">
-                                {{ item.count }}
-                            </div>
-                        </div>
-                    {% endfor %}
+
+    <!-- Counts by Class -->
+    <section class="counts-section">
+        <h2 class="section-title">📊 Students by Class {% if current_location %}at {{ current_location.name }}{% else
+            %}Nearby{% endif %}</h2>
+        {% if user_classes_data %}
+        <div class="class-counts-grid">
+            {% for item in user_classes_data %}
+            <div class="class-count-card {% if item.count > 0 %}has-students{% endif %}">
+                <div class="class-info">
+                    <div class="class-code">{{ item.code }}</div>
+                    <div class="class-name">{{ item.name|truncatewords:5 }}</div>
                 </div>
-            {% else %}
-                <div class="empty-state">
-                    You have no classes added. <a href="{% url 'accounts:profile_edit' %}">Add classes</a> to see nearby classmates.
+                <div class="class-count-badge {% if item.count == 0 %}zero{% endif %}">
+                    {{ item.count }}
                 </div>
-            {% endif %}
-        </section>
-        
-        <!-- Classmates by Class -->
-        <section class="classmates-section">
-            <h2 class="section-title">🎓 Your Classmates Here</h2>
-            {% if user_classes_data %}
-                {% for item in user_classes_data %}
-                    <div class="class-group">
-                        <div class="class-group-header">
-                            <span class="class-group-title">{{ item.code }} - {{ item.name }}</span>
-                            <span class="class-group-count">{{ item.count }} student{{ item.count|pluralize }} nearby</span>
-                        </div>
-                        {% if item.members %}
-                            <div class="classmates-grid">
-                                {% for p in item.members %}
-                                    <a href="{% url 'accounts:profile_detail' p.user.id %}" class="classmate-card">
-                                        <div class="classmate-name">{{ p.name }}</div>
-                                        <div class="classmate-year">{{ p.get_year_display }}</div>
-                                        <div class="classmate-actions">
-                                            <span class="action-btn chat">💬 Chat</span>
-                                        </div>
-                                    </a>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state">No classmates visible at your location for this class.</div>
-                        {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            You have no classes added. <a href="{% url 'accounts:profile_edit' %}">Add classes</a> to see nearby
+            classmates.
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Classmates by Class -->
+    <section class="classmates-section">
+        <h2 class="section-title">🎓 Your Classmates Here</h2>
+        {% if user_classes_data %}
+        {% for item in user_classes_data %}
+        <div class="class-group">
+            <div class="class-group-header">
+                <span class="class-group-title">{{ item.code }} - {{ item.name }}</span>
+                <span class="class-group-count">{{ item.count }} student{{ item.count|pluralize }} nearby</span>
+            </div>
+            {% if item.members %}
+            <div class="classmates-grid">
+                {% for p in item.members %}
+                <a href="{% url 'accounts:profile_detail' p.user.id %}" class="classmate-card">
+                    <div class="classmate-name">{{ p.name }}</div>
+                    <div class="classmate-year">{{ p.get_year_display }}</div>
+                    <div class="classmate-actions">
+                        <span class="action-btn chat">💬 Chat</span>
                     </div>
+                </a>
                 {% endfor %}
+            </div>
             {% else %}
-                <div class="empty-state">No classes to display. Add classes to your profile to see nearby classmates.</div>
+            <div class="empty-state">No classmates visible at your location for this class.</div>
             {% endif %}
-        </section>
-        
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">No classes to display. Add classes to your profile to see nearby classmates.</div>
+        {% endif %}
+    </section>
+
     {% else %}
-        <div class="no-location-warning">
-            <strong>📍 Set your location!</strong><br>
-            Set your current location in your profile to find classmates studying nearby.
-            <a href="{% url 'accounts:profile_edit' %}">Update now →</a>
+    <div class="no-location-warning">
+        <strong>📍 Set your location!</strong><br>
+        Set your current location in your profile to find classmates studying nearby.
+        <a href="{% url 'accounts:profile_edit' %}">Update now →</a>
     </div>
     {% endif %}
 </div>
@@ -447,100 +453,101 @@
 
 {% block extra_js %}
 <!-- Leaflet JS for maps -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the map centered on Georgia Tech campus
-    const gtCenter = [33.7756, -84.3963];
-    const map = L.map('campus-map').setView(gtCenter, 16);
-    
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-    
-    // Custom icons
-    const userIcon = L.divIcon({
-        className: 'user-marker',
-        html: '<div style="background: #003057; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
-        iconSize: [35, 35],
-        iconAnchor: [17, 35],
-        popupAnchor: [0, -35]
-    });
-    
-    const classmateIcon = L.divIcon({
-        className: 'classmate-marker',
-        html: '<div style="background: #4caf50; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👤</div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30]
-    });
-    
-    const locationIcon = L.divIcon({
-        className: 'location-marker',
-        html: '<div style="background: #ff9800; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🏫</div>',
-        iconSize: [25, 25],
-        iconAnchor: [12, 25],
-        popupAnchor: [0, -25]
-    });
-    
-    let userMarker = null;
-    let classmateMarkers = [];
-    const mapStatus = document.getElementById('map-status');
-    
-    // Add user's location if available
-    {% if current_profile.has_gps_coordinates %}
-        userMarker = L.marker([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], {icon: userIcon})
-            .addTo(map)
-            .bindPopup('<strong>Your Location</strong><br>{% if current_location %}{{ current_location.name }}{% else %}Current Position{% endif %}');
-        map.setView([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], 17);
-        mapStatus.innerHTML = '📍 Showing your GPS location';
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize the map centered on Georgia Tech campus
+        const gtCenter = [33.7756, -84.3963];
+        const map = L.map('campus-map').setView(gtCenter, 16);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Custom icons
+        const userIcon = L.divIcon({
+            className: 'user-marker',
+            html: '<div style="background: #003057; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
+            iconSize: [35, 35],
+            iconAnchor: [17, 35],
+            popupAnchor: [0, -35]
+        });
+
+        const classmateIcon = L.divIcon({
+            className: 'classmate-marker',
+            html: '<div style="background: #4caf50; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👤</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30]
+        });
+
+        const locationIcon = L.divIcon({
+            className: 'location-marker',
+            html: '<div style="background: #ff9800; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🏫</div>',
+            iconSize: [25, 25],
+            iconAnchor: [12, 25],
+            popupAnchor: [0, -25]
+        });
+
+        let userMarker = null;
+        let classmateMarkers = [];
+        const mapStatus = document.getElementById('map-status');
+
+        // Add user's location if available
+        {% if current_profile.has_gps_coordinates %}
+        userMarker = L.marker([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], { icon: userIcon })
+        .addTo(map)
+        .bindPopup('<strong>Your Location</strong><br>{% if current_location %}{{ current_location.name }}{% else %}Current Position{% endif %}');
+    map.setView([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], 17);
+    mapStatus.innerHTML = '📍 Showing your GPS location';
     {% elif current_location and current_location.has_coordinates %}
-        userMarker = L.marker([{{ current_location.latitude }}, {{ current_location.longitude }}], {icon: userIcon})
-            .addTo(map)
-            .bindPopup('<strong>Your Location</strong><br>{{ current_location.name }}');
-        map.setView([{{ current_location.latitude }}, {{ current_location.longitude }}], 17);
-        mapStatus.innerHTML = '📍 Showing selected location: {{ current_location.name }}';
+    userMarker = L.marker([{{ current_location.latitude }}, {{ current_location.longitude }}], { icon: userIcon })
+        .addTo(map)
+        .bindPopup('<strong>Your Location</strong><br>{{ current_location.name }}');
+    map.setView([{{ current_location.latitude }}, {{ current_location.longitude }}], 17);
+    mapStatus.innerHTML = '📍 Showing selected location: {{ current_location.name }}';
     {% else %}
-        mapStatus.innerHTML = '⚠️ Set your location to see yourself on the map';
+    mapStatus.innerHTML = '⚠️ Set your location to see yourself on the map';
     {% endif %}
-    
+
     // Add classmate markers
     {% if user_classes_data %}
-        {% for item in user_classes_data %}
-            {% for p in item.members %}
-                {% if p.has_gps_coordinates %}
-                    L.marker([{{ p.current_latitude }}, {{ p.current_longitude }}], {icon: classmateIcon})
-                        .addTo(map)
-                        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
-                {% elif p.current_location.has_coordinates %}
-                    L.marker([{{ p.current_location.latitude }}, {{ p.current_location.longitude }}], {icon: classmateIcon})
-                        .addTo(map)
-                        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📍 {{ p.current_location.name }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
+    {% for item in user_classes_data %}
+    {% for p in item.members %}
+    {% if p.has_gps_coordinates %}
+    L.marker([{{ p.current_latitude }}, {{ p.current_longitude }}], { icon: classmateIcon })
+        .addTo(map)
+        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
+    {% elif p.current_location.has_coordinates %}
+    L.marker([{{ p.current_location.latitude }}, {{ p.current_location.longitude }}], { icon: classmateIcon })
+        .addTo(map)
+        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📍 {{ p.current_location.name }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
     {% endif %}
-    
+    {% endfor %}
+    {% endfor %}
+    {% endif %}
+
     // GPS Location Refresh Button
     const refreshBtn = document.getElementById('refresh-location-btn');
     const refreshIcon = document.getElementById('refresh-icon');
-    
-    refreshBtn.addEventListener('click', function() {
+
+    refreshBtn.addEventListener('click', function () {
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by your browser.');
             return;
         }
-        
+
         refreshBtn.disabled = true;
         refreshIcon.textContent = '⏳';
         mapStatus.innerHTML = '🛰️ Detecting GPS location...';
-        
+
         navigator.geolocation.getCurrentPosition(
-            function(position) {
+            function (position) {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                
+
                 // Update location on server
                 fetch('/locations/api/update-gps/', {
                     method: 'POST',
@@ -550,47 +557,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ latitude: lat, longitude: lon })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update or add user marker
-                        if (userMarker) {
-                            userMarker.setLatLng([lat, lon]);
-                        } else {
-                            userMarker = L.marker([lat, lon], {icon: userIcon}).addTo(map);
-                        }
-                        
-                        const nearestLoc = data.nearest_location;
-                        userMarker.bindPopup('<strong>Your Location</strong><br>' + (nearestLoc ? nearestLoc.name : 'Current Position'));
-                        map.setView([lat, lon], 17);
-                        
-                        let statusMsg = '✅ GPS updated! Coordinates: ' + lat.toFixed(4) + ', ' + lon.toFixed(4);
-                        if (nearestLoc) {
-                            statusMsg += '<br>Nearest: ' + nearestLoc.name + ' (' + nearestLoc.distance + ')';
-                            if (nearestLoc.auto_selected) {
-                                statusMsg += ' ✓';
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update or add user marker
+                            if (userMarker) {
+                                userMarker.setLatLng([lat, lon]);
+                            } else {
+                                userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
                             }
+
+                            const nearestLoc = data.nearest_location;
+                            userMarker.bindPopup('<strong>Your Location</strong><br>' + (nearestLoc ? nearestLoc.name : 'Current Position'));
+                            map.setView([lat, lon], 17);
+
+                            let statusMsg = '✅ GPS updated! Coordinates: ' + lat.toFixed(4) + ', ' + lon.toFixed(4);
+                            if (nearestLoc) {
+                                statusMsg += '<br>Nearest: ' + nearestLoc.name + ' (' + nearestLoc.distance + ')';
+                                if (nearestLoc.auto_selected) {
+                                    statusMsg += ' ✓';
+                                }
+                            }
+                            mapStatus.innerHTML = statusMsg;
+
+                            // Reload page after a short delay to update classmate list
+                            setTimeout(() => location.reload(), 2000);
+                        } else {
+                            mapStatus.innerHTML = '❌ Error: ' + (data.error || 'Failed to update location');
                         }
-                        mapStatus.innerHTML = statusMsg;
-                        
-                        // Reload page after a short delay to update classmate list
-                        setTimeout(() => location.reload(), 2000);
-                    } else {
-                        mapStatus.innerHTML = '❌ Error: ' + (data.error || 'Failed to update location');
-                    }
-                    
-                    refreshBtn.disabled = false;
-                    refreshIcon.textContent = '🛰️';
-                })
-                .catch(error => {
-                    mapStatus.innerHTML = '❌ Error connecting to server';
-                    refreshBtn.disabled = false;
-                    refreshIcon.textContent = '🛰️';
-                });
+
+                        refreshBtn.disabled = false;
+                        refreshIcon.textContent = '🛰️';
+                    })
+                    .catch(error => {
+                        mapStatus.innerHTML = '❌ Error connecting to server';
+                        refreshBtn.disabled = false;
+                        refreshIcon.textContent = '🛰️';
+                    });
             },
-            function(error) {
+            function (error) {
                 let errorMsg;
-                switch(error.code) {
+                switch (error.code) {
                     case error.PERMISSION_DENIED:
                         errorMsg = 'Location permission denied';
                         break;
@@ -613,5 +620,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-
-

@@ -17,31 +17,43 @@ def nearby_classmates(request):
         messages.info(request, 'Please create your profile first.')
         return redirect('accounts:create_profile')
     
-    # Ensure current location is set
     current_location = current_profile.current_location
-    if current_location is None:
-        messages.info(request, 'Set your current location to see nearby classmates.')
-        return render(request, 'accounts/nearby.html', {
-            'current_profile': current_profile,
-            'current_location': None,
-            'user_classes': current_profile.classes.all().order_by('code'),
-            'counts_by_class': {},
-            'grouped_by_class': {},
-        })
     
-    # Prepare user classes
+    # Prepare user classes (always needed for template)
     user_classes_qs = current_profile.classes.all().order_by('code')
     user_class_codes = set(user_classes_qs.values_list('code', flat=True))
     
-    # Candidates: active students at the same location, excluding self
-    candidates = (
-        StudentProfile.objects
-        .filter(is_active=True, current_location=current_location)
-        .exclude(id=current_profile.id)
-        .select_related('user', 'current_location')
-        .prefetch_related('classes')
-    )
+    candidates = []
     
+    if current_location:
+        # Match by exact location ID
+        candidates = list(
+            StudentProfile.objects
+            .filter(is_active=True, current_location=current_location)
+            .exclude(id=current_profile.id)
+            .select_related('user', 'current_location')
+            .prefetch_related('classes')
+        )
+    elif current_profile.has_gps_coordinates():
+        # Match by GPS distance (within 1000m)
+        all_gps_candidates = (
+            StudentProfile.objects
+            .filter(is_active=True, current_latitude__isnull=False)
+            .exclude(id=current_profile.id)
+            .select_related('user', 'current_location')
+            .prefetch_related('classes')
+        )
+        
+        candidates = []
+        for s in all_gps_candidates:
+            dist = current_profile.distance_to_profile(s)
+            # Use 1000m (1km) as nearby threshold for GPS
+            if dist is not None and dist <= 1000:
+                candidates.append(s)
+    else:
+        # No location set
+        messages.info(request, 'Set your current location to see nearby classmates.')
+
     # Group visible classmates by shared classes and compute counts
     from collections import defaultdict
     grouped_by_class = defaultdict(list)
