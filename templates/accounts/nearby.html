@@ -343,10 +343,21 @@
                 <h3>Your Current Location</h3>
                 <p>{{ current_location.name }}</p>
                 {% if current_profile.has_gps_coordinates %}
-                    <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.25rem;">
-                        GPS: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}
+                    <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;">
+                        🛰️ GPS: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}
                     </div>
                 {% endif %}
+            </div>
+        </div>
+    {% elif current_profile.has_gps_coordinates %}
+        <div class="location-banner" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);">
+            <span class="location-icon">🛰️</span>
+            <div class="location-info">
+                <h3>GPS Location Active</h3>
+                <p>Coordinates: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}</p>
+                <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem;">
+                    <a href="{% url 'accounts:profile_edit' %}" style="color: white; text-decoration: underline;">Select a campus location →</a>
+                </div>
             </div>
         </div>
         
@@ -548,12 +559,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else {
                             userMarker = L.marker([lat, lon], {icon: userIcon}).addTo(map);
                         }
-                        userMarker.bindPopup('<strong>Your Location</strong><br>' + (data.matched_location ? data.matched_location.name : 'Current Position'));
+                        
+                        const nearestLoc = data.nearest_location;
+                        userMarker.bindPopup('<strong>Your Location</strong><br>' + (nearestLoc ? nearestLoc.name : 'Current Position'));
                         map.setView([lat, lon], 17);
                         
-                        let statusMsg = '✅ Location updated!';
-                        if (data.matched_location) {
-                            statusMsg += ' Nearest: ' + data.matched_location.name + ' (' + data.matched_location.distance + ')';
+                        let statusMsg = '✅ GPS updated! Coordinates: ' + lat.toFixed(4) + ', ' + lon.toFixed(4);
+                        if (nearestLoc) {
+                            statusMsg += '<br>Nearest: ' + nearestLoc.name + ' (' + nearestLoc.distance + ')';
+                            if (nearestLoc.auto_selected) {
+                                statusMsg += ' ✓';
+                            }
                         }
                         mapStatus.innerHTML = statusMsg;
                         

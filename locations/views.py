@@ -47,12 +47,13 @@ def update_gps_location(request):
         
         # Try to find nearest known location
         nearest_location = find_nearest_location(latitude, longitude)
-        if nearest_location:
+        if nearest_location and nearest_location.get('auto_select', False):
+            # Only auto-select if within 500m
             profile.current_location = nearest_location['location']
         
         profile.save()
         
-        # Reverse geocode to get address
+        # Reverse geocode to get address (optional, may fail due to network)
         address_info = reverse_geocode(latitude, longitude)
         
         response_data = {
@@ -65,11 +66,12 @@ def update_gps_location(request):
         }
         
         if nearest_location:
-            response_data['matched_location'] = {
+            response_data['nearest_location'] = {
                 'id': nearest_location['location'].id,
                 'name': nearest_location['location'].name,
                 'distance': Location.format_distance(nearest_location['distance']),
                 'distance_meters': nearest_location['distance'],
+                'auto_selected': nearest_location.get('auto_select', False),
             }
         
         return JsonResponse(response_data)
@@ -159,10 +161,11 @@ def reverse_geocode(latitude, longitude):
         return None
 
 
-def find_nearest_location(latitude, longitude, max_distance_meters=500):
+def find_nearest_location(latitude, longitude, max_distance_meters=None):
     """
-    Find the nearest known location within a maximum distance.
-    Returns dict with location and distance, or None if no match found.
+    Find the nearest known location.
+    If max_distance_meters is provided, only return locations within that distance.
+    Returns dict with location, distance, and whether it's within auto-select range.
     """
     locations = Location.objects.filter(
         is_active=True,
@@ -175,14 +178,17 @@ def find_nearest_location(latitude, longitude, max_distance_meters=500):
     
     for location in locations:
         distance = location.distance_to(latitude, longitude)
-        if distance is not None and distance < min_distance and distance <= max_distance_meters:
+        if distance is not None and distance < min_distance:
             min_distance = distance
             nearest = location
     
     if nearest:
+        # Auto-select threshold is 500m, but always return the nearest
+        auto_select = min_distance <= 500 if max_distance_meters is None else min_distance <= max_distance_meters
         return {
             'location': nearest,
             'distance': min_distance,
+            'auto_select': auto_select,
         }
     
     return None

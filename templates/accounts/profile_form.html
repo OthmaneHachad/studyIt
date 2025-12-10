@@ -490,30 +490,57 @@ document.addEventListener('DOMContentLoaded', function() {
                                 gpsAddress.style.display = 'none';
                             }
                             
-                            // Show nearest matched location
-                            if (data.matched_location) {
-                                gpsNearest.innerHTML = `✅ Nearest campus location: <strong>${data.matched_location.name}</strong> (${data.matched_location.distance})`;
+                            // Show nearest location (always show, regardless of distance)
+                            const nearestLoc = data.nearest_location;
+                            if (nearestLoc) {
+                                if (nearestLoc.auto_selected) {
+                                    // Within 500m - auto-selected
+                                    gpsNearest.innerHTML = `✅ Nearest campus location: <strong>${nearestLoc.name}</strong> (${nearestLoc.distance})<br><span style="font-size: 0.85rem; color: #2e7d32;">✓ Auto-selected (within 500m)</span>`;
+                                } else {
+                                    // Far away - show option to select
+                                    gpsNearest.innerHTML = `📍 Nearest campus location: <strong>${nearestLoc.name}</strong> (${nearestLoc.distance})<br><span style="font-size: 0.85rem; color: #666;">You're far from campus. <button type="button" id="select-nearest-btn" style="background: #003057; color: white; padding: 0.25rem 0.5rem; border: none; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">Select ${nearestLoc.name}</button></span>`;
+                                    
+                                    // Add click handler after DOM update
+                                    setTimeout(() => {
+                                        const selectBtn = document.getElementById('select-nearest-btn');
+                                        if (selectBtn) {
+                                            selectBtn.addEventListener('click', function() {
+                                                if (locationSelect) {
+                                                    for (let option of locationSelect.options) {
+                                                        if (option.value == nearestLoc.id) {
+                                                            option.selected = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    this.textContent = '✓ Selected!';
+                                                    this.style.background = '#28a745';
+                                                    this.disabled = true;
+                                                }
+                                            });
+                                        }
+                                    }, 0);
+                                }
                                 gpsNearest.style.display = 'block';
                                 
-                                // Auto-select the location in the dropdown
-                                if (locationSelect) {
+                                // Auto-select the location in the dropdown if within range
+                                if (nearestLoc.auto_selected && locationSelect) {
                                     for (let option of locationSelect.options) {
-                                        if (option.value == data.matched_location.id) {
+                                        if (option.value == nearestLoc.id) {
                                             option.selected = true;
                                             break;
                                         }
                                     }
                                 }
                             } else {
-                                gpsNearest.innerHTML = '⚠️ No nearby campus location found. Please select manually.';
+                                gpsNearest.innerHTML = '⚠️ No campus locations configured. Please select manually.';
                                 gpsNearest.style.display = 'block';
                             }
                             
                             // Show coordinates
-                            gpsCoordinates.textContent = `Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                            gpsCoordinates.textContent = `GPS Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
                             
                             detectLocationIcon.textContent = '✅';
-                            detectLocationText.textContent = 'Location Updated!';
+                            detectLocationText.textContent = 'GPS Updated!';
                             
                             setTimeout(() => {
                                 detectLocationIcon.textContent = '📍';
