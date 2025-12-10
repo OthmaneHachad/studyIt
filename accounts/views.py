@@ -100,6 +100,7 @@ def nearby_classmates(request):
         'total_nearby_classmates': total_nearby_classmates,
         'classes_with_students': classes_with_students,
         'unique_nearby_count': unique_nearby_count,
+        'has_gps': current_profile.has_gps_coordinates(),
     })
 
 def login_view(request):

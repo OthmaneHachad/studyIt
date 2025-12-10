@@ -2,6 +2,11 @@
 
 {% block title %}Nearby Classmates - StudyIt{% endblock %}
 
+{% block extra_head %}
+<!-- Leaflet CSS for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+{% endblock %}
+
 {% block extra_css %}
 <style>
     .nearby-container {
@@ -316,8 +321,20 @@
 <div class="nearby-container">
     <div class="nearby-header">
         <h1>👥 Nearby Classmates</h1>
-        <a href="{% url 'accounts:profile_edit' %}" class="edit-profile-btn">✏️ Edit Profile</a>
+        <div style="display: flex; gap: 0.5rem;">
+            <button id="refresh-location-btn" style="background: #4caf50; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                <span id="refresh-icon">🛰️</span> Update GPS Location
+            </button>
+            <a href="{% url 'accounts:profile_edit' %}" class="edit-profile-btn">✏️ Edit Profile</a>
+        </div>
     </div>
+    
+    <!-- Map Section -->
+    <section class="counts-section" style="margin-bottom: 1.5rem;">
+        <h2 class="section-title">🗺️ Campus Map</h2>
+        <div id="campus-map" style="height: 350px; border-radius: 10px; border: 1px solid #e5e7eb;"></div>
+        <div id="map-status" style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;"></div>
+    </section>
     
     {% if current_location %}
         <div class="location-banner">
@@ -325,6 +342,11 @@
             <div class="location-info">
                 <h3>Your Current Location</h3>
                 <p>{{ current_location.name }}</p>
+                {% if current_profile.has_gps_coordinates %}
+                    <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.25rem;">
+                        GPS: {{ current_profile.current_latitude|floatformat:4 }}, {{ current_profile.current_longitude|floatformat:4 }}
+                    </div>
+                {% endif %}
             </div>
         </div>
         
@@ -343,9 +365,9 @@
                     <div class="summary-number">{{ classes_with_students|default:0 }}</div>
                     <div class="summary-label">Classes with Nearby Students</div>
                 </div>
-            </div>
-        {% endif %}
-        
+        </div>
+    {% endif %}
+    
         <!-- Counts by Class -->
         <section class="counts-section">
             <h2 class="section-title">📊 Students by Class at {{ current_location.name }}</h2>
@@ -356,7 +378,7 @@
                             <div class="class-info">
                                 <div class="class-code">{{ item.code }}</div>
                                 <div class="class-name">{{ item.name|truncatewords:5 }}</div>
-                            </div>
+                                </div>
                             <div class="class-count-badge {% if item.count == 0 %}zero{% endif %}">
                                 {{ item.count }}
                             </div>
@@ -407,11 +429,173 @@
             <strong>📍 Set your location!</strong><br>
             Set your current location in your profile to find classmates studying nearby.
             <a href="{% url 'accounts:profile_edit' %}">Update now →</a>
-        </div>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
 
-{% block extra_js %}{% endblock %}
+{% block extra_js %}
+<!-- Leaflet JS for maps -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map centered on Georgia Tech campus
+    const gtCenter = [33.7756, -84.3963];
+    const map = L.map('campus-map').setView(gtCenter, 16);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Custom icons
+    const userIcon = L.divIcon({
+        className: 'user-marker',
+        html: '<div style="background: #003057; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
+        iconSize: [35, 35],
+        iconAnchor: [17, 35],
+        popupAnchor: [0, -35]
+    });
+    
+    const classmateIcon = L.divIcon({
+        className: 'classmate-marker',
+        html: '<div style="background: #4caf50; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👤</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+    });
+    
+    const locationIcon = L.divIcon({
+        className: 'location-marker',
+        html: '<div style="background: #ff9800; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🏫</div>',
+        iconSize: [25, 25],
+        iconAnchor: [12, 25],
+        popupAnchor: [0, -25]
+    });
+    
+    let userMarker = null;
+    let classmateMarkers = [];
+    const mapStatus = document.getElementById('map-status');
+    
+    // Add user's location if available
+    {% if current_profile.has_gps_coordinates %}
+        userMarker = L.marker([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], {icon: userIcon})
+            .addTo(map)
+            .bindPopup('<strong>Your Location</strong><br>{% if current_location %}{{ current_location.name }}{% else %}Current Position{% endif %}');
+        map.setView([{{ current_profile.current_latitude }}, {{ current_profile.current_longitude }}], 17);
+        mapStatus.innerHTML = '📍 Showing your GPS location';
+    {% elif current_location and current_location.has_coordinates %}
+        userMarker = L.marker([{{ current_location.latitude }}, {{ current_location.longitude }}], {icon: userIcon})
+            .addTo(map)
+            .bindPopup('<strong>Your Location</strong><br>{{ current_location.name }}');
+        map.setView([{{ current_location.latitude }}, {{ current_location.longitude }}], 17);
+        mapStatus.innerHTML = '📍 Showing selected location: {{ current_location.name }}';
+    {% else %}
+        mapStatus.innerHTML = '⚠️ Set your location to see yourself on the map';
+    {% endif %}
+    
+    // Add classmate markers
+    {% if user_classes_data %}
+        {% for item in user_classes_data %}
+            {% for p in item.members %}
+                {% if p.has_gps_coordinates %}
+                    L.marker([{{ p.current_latitude }}, {{ p.current_longitude }}], {icon: classmateIcon})
+                        .addTo(map)
+                        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
+                {% elif p.current_location.has_coordinates %}
+                    L.marker([{{ p.current_location.latitude }}, {{ p.current_location.longitude }}], {icon: classmateIcon})
+                        .addTo(map)
+                        .bindPopup('<strong>{{ p.name }}</strong><br>{{ p.get_year_display }}<br>📍 {{ p.current_location.name }}<br>📚 {{ item.code }}<br><a href="{% url "accounts:profile_detail" p.user.id %}">View Profile</a>');
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+    
+    // GPS Location Refresh Button
+    const refreshBtn = document.getElementById('refresh-location-btn');
+    const refreshIcon = document.getElementById('refresh-icon');
+    
+    refreshBtn.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser.');
+            return;
+        }
+        
+        refreshBtn.disabled = true;
+        refreshIcon.textContent = '⏳';
+        mapStatus.innerHTML = '🛰️ Detecting GPS location...';
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                // Update location on server
+                fetch('/locations/api/update-gps/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lon })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update or add user marker
+                        if (userMarker) {
+                            userMarker.setLatLng([lat, lon]);
+                        } else {
+                            userMarker = L.marker([lat, lon], {icon: userIcon}).addTo(map);
+                        }
+                        userMarker.bindPopup('<strong>Your Location</strong><br>' + (data.matched_location ? data.matched_location.name : 'Current Position'));
+                        map.setView([lat, lon], 17);
+                        
+                        let statusMsg = '✅ Location updated!';
+                        if (data.matched_location) {
+                            statusMsg += ' Nearest: ' + data.matched_location.name + ' (' + data.matched_location.distance + ')';
+                        }
+                        mapStatus.innerHTML = statusMsg;
+                        
+                        // Reload page after a short delay to update classmate list
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        mapStatus.innerHTML = '❌ Error: ' + (data.error || 'Failed to update location');
+                    }
+                    
+                    refreshBtn.disabled = false;
+                    refreshIcon.textContent = '🛰️';
+                })
+                .catch(error => {
+                    mapStatus.innerHTML = '❌ Error connecting to server';
+                    refreshBtn.disabled = false;
+                    refreshIcon.textContent = '🛰️';
+                });
+            },
+            function(error) {
+                let errorMsg;
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = 'Location permission denied';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = 'Location unavailable';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = 'Location request timed out';
+                        break;
+                    default:
+                        errorMsg = 'Unknown error';
+                }
+                mapStatus.innerHTML = '❌ ' + errorMsg;
+                refreshBtn.disabled = false;
+                refreshIcon.textContent = '🛰️';
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+});
+</script>
+{% endblock %}
 
 
