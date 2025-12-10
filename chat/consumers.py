@@ -279,6 +279,18 @@ class CallSignalingConsumer(AsyncWebsocketConsumer):
                     }
                 )
             
+            elif message_type == 'request_to_join':
+                # User wants to join an active call
+                await self.channel_layer.group_send(
+                    self.call_group_name,
+                    {
+                        'type': 'call_join_request',
+                        'joiner_id': user_profile.id,
+                        'joiner_name': user_profile.name,
+                        'username': self.user.username,
+                    }
+                )
+            
             elif message_type == 'call_cancel':
                 # Cancelling a call before it's answered
                 await self.channel_layer.group_send(
@@ -361,6 +373,16 @@ class CallSignalingConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 'type': 'call_cancelled',
                 'canceller_name': event.get('canceller_name'),
+            }))
+
+    async def call_join_request(self, event):
+        """Forward join request to other participants"""
+        # Don't send to the person who requested to join
+        if self.user.username != event['username']:
+            await self.send(text_data=json.dumps({
+                'type': 'call_join_request',
+                'joiner_id': event['joiner_id'],
+                'joiner_name': event['joiner_name'],
             }))
 
     async def user_disconnected(self, event):
