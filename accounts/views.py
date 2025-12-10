@@ -133,8 +133,18 @@ def signup_view(request):
             if user_type == 'student':
                 return redirect('accounts:create_profile')
             else:
-                # TA profile creation can be implemented later
-                return redirect('home')
+                # Create a basic TA profile and send them to sessions
+                full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+                TAProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'name': full_name,
+                        'department': '',
+                        'is_active': True,
+                    }
+                )
+                messages.info(request, 'TA profile created. You can now post study sessions.')
+                return redirect('study_sessions:session_list')
     else:
         form = UserRegistrationForm()
     

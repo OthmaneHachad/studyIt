@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Study Sessions - StudyIt{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h1 style="color: #003057; margin: 0;">Study Sessions</h1>
+        {% if can_post %}
+            <a href="{% url 'study_sessions:session_create' %}" style="background: #003057; color: white; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 500;">+ Post a Session</a>
+        {% endif %}
+    </div>
+
+
+    {% if sessions %}
+        <div style="display: grid; gap: 1rem;">
+            {% for session in sessions %}
+                <div style="background: white; padding: 1.25rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
+                        <div>
+                            <h2 style="margin: 0; color: #003057;">{{ session.title }}</h2>
+                            <p style="margin: 0.25rem 0; color: #666; font-size: 0.95rem;">Hosted by {{ session.host.name }}</p>
+                            {% if session.host.classes_teaching.all %}
+                                <div style="color: #555; font-size: 0.9rem;">Courses: {{ session.host.classes_teaching.all|join:", " }}</div>
+                            {% endif %}
+                        </div>
+                        <div style="text-align: right; color: #003057; font-weight: 600;">
+                            <div>Starts: {{ session.start_time|date:"M d, Y g:i A" }}</div>
+                            <div>Ends: {{ session.end_time|date:"M d, Y g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% if session.location %}
+                        <div style="margin-top: 0.5rem; color: #2e7d32; font-weight: 600;">📍 {{ session.location.name }}</div>
+                    {% endif %}
+                    {% if session.description %}
+                        <p style="margin-top: 0.75rem; color: #555; white-space: pre-wrap;">{{ session.description }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="background: white; padding: 2rem; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="color: #003057; margin-bottom: 0.5rem;">No upcoming sessions</h3>
+            <p style="color: #666;">Check back soon for new TA study sessions.</p>
+            {% if can_post %}
+                <a href="{% url 'study_sessions:session_create' %}" style="background: #003057; color: white; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 500;">Post one now</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
