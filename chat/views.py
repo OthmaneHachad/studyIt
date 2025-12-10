@@ -399,6 +399,21 @@ def initiate_call(request, room_name):
     
     # GET request - check for active calls
     if request.method == 'GET':
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Clean up stale calls (older than 5 minutes in initiated/ringing state)
+        stale_threshold = timezone.now() - timedelta(minutes=5)
+        stale_calls = Call.objects.filter(
+            chat_room=chat_room,
+            status__in=['initiated', 'ringing'],
+            initiated_at__lt=stale_threshold
+        )
+        for stale_call in stale_calls:
+            stale_call.status = 'missed'
+            stale_call.ended_at = timezone.now()
+            stale_call.save()
+        
         active_call = Call.objects.filter(
             chat_room=chat_room,
             status__in=['initiated', 'ringing', 'accepted']
@@ -419,6 +434,9 @@ def initiate_call(request, room_name):
     
     # POST request - initiate a new call
     if request.method == 'POST':
+        from django.utils import timezone
+        from datetime import timedelta
+        
         call_type = request.POST.get('call_type', 'video')
         
         if call_type not in ['audio', 'video']:
@@ -426,6 +444,18 @@ def initiate_call(request, room_name):
         
         # Get the other participant
         other_participant = chat_room.get_other_participant(profile)
+        
+        # Clean up stale calls before checking for active ones
+        stale_threshold = timezone.now() - timedelta(minutes=5)
+        stale_calls = Call.objects.filter(
+            chat_room=chat_room,
+            status__in=['initiated', 'ringing'],
+            initiated_at__lt=stale_threshold
+        )
+        for stale_call in stale_calls:
+            stale_call.status = 'missed'
+            stale_call.ended_at = timezone.now()
+            stale_call.save()
         
         # Check if there's already an active call in this room
         active_call = Call.objects.filter(
@@ -474,11 +504,13 @@ def end_call(request, call_id):
         
         # Only end if call is active
         if call.status in ['initiated', 'ringing', 'accepted']:
+            # Calculate duration if call was accepted (BEFORE changing status)
+            was_accepted = call.status == 'accepted' and call.accepted_at
+            
             call.ended_at = timezone.now()
             call.status = 'ended'
             
-            # Calculate duration if call was accepted
-            if call.status == 'accepted' and call.accepted_at:
+            if was_accepted:
                 call.calculate_duration()
             
             call.save()
