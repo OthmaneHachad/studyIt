@@ -13,7 +13,7 @@ def session_list(request):
     now = timezone.now()
     sessions = list(
         StudySession.objects.filter(is_active=True, end_time__gte=now)
-        .select_related("host", "location")
+        .select_related("host")
         .order_by("start_time")
     )
     
@@ -38,34 +38,17 @@ def session_list(request):
 
 @login_required
 def session_create(request):
-    """Allow TA/session hosts to post new study sessions."""
-    ta_profile = getattr(request.user, "ta_profile", None)
-    if ta_profile is None:
-        # Auto-create TA profile for users who signed up as TA
-        full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
-        ta_profile = TAProfile.objects.create(
-            user=request.user,
-            name=full_name,
-            department="",
-            is_active=True,
-        )
-        messages.info(request, "TA profile created for you. You can now post sessions.")
-
+    """Allow users to post new study sessions."""
     if request.method == "POST":
         form = StudySessionForm(request.POST)
-        # Limit course choices to TA's classes
-        if "course" in form.fields:
-            form.fields["course"].queryset = ta_profile.classes_teaching.all()
         if form.is_valid():
             session = form.save(commit=False)
-            session.host = ta_profile
+            session.host = request.user
             session.save()
             messages.success(request, "Study session posted successfully.")
             return redirect("study_sessions:session_list")
     else:
         form = StudySessionForm()
-        if "course" in form.fields:
-            form.fields["course"].queryset = ta_profile.classes_teaching.all()
 
     return render(request, "study_sessions/session_form.html", {"form": form})
 
@@ -80,7 +63,7 @@ def request_session_join(request, session_id):
         messages.error(request, "You must be a student to join a session.")
         return redirect("study_sessions:session_list")
 
-    if session.host.user == request.user:
+    if session.host == request.user:
         messages.error(request, "You cannot join your own session.")
         return redirect("study_sessions:session_list")
 
@@ -104,7 +87,7 @@ def manage_session_requests(request, session_id):
     """Allow host to view and manage requests for their session."""
     session = get_object_or_404(StudySession, id=session_id)
 
-    if session.host.user != request.user:
+    if session.host != request.user:
         messages.error(request, "You do not have permission to manage this session.")
         return redirect("study_sessions:session_list")
 
@@ -125,7 +108,7 @@ def update_request_status(request, enrollment_id, action):
     enrollment = get_object_or_404(SessionEnrollment, id=enrollment_id)
 
     # Verify that the logged-in user is the host of the session
-    if enrollment.session.host.user != request.user:
+    if enrollment.session.host != request.user:
         messages.error(request, "Permission denied.")
         return redirect("study_sessions:session_list")
 

@@ -8,7 +8,7 @@ class StudySessionForm(forms.ModelForm):
 
     class Meta:
         model = StudySession
-        fields = ["title", "course", "description", "location", "start_time", "end_time", "is_active"]
+        fields = ["title", "course", "description", "location", "room_number", "start_time", "end_time", "is_active"]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., CS2340 Exam Review"}),
             "course": forms.Select(attrs={"class": "form-control"}),
@@ -19,7 +19,8 @@ class StudySessionForm(forms.ModelForm):
                     "rows": 4,
                 }
             ),
-            "location": forms.Select(attrs={"class": "form-control"}),
+            "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., Library 3rd Floor"}),
+            "room_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., 304"}),
             "start_time": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
             "end_time": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),

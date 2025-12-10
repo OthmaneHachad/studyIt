@@ -21,11 +21,9 @@
             <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap;">
                 <div>
                     <h2 style="margin: 0; color: #003057;">{{ session.title }}</h2>
-                    <p style="margin: 0.25rem 0; color: #666; font-size: 0.95rem;">Hosted by {{ session.host.name }}</p>
+                    <p style="margin: 0.25rem 0; color: #666; font-size: 0.95rem;">Hosted by {{ session.host.get_full_name|default:session.host.username }}</p>
                     {% if session.course %}
-                    <div style="color: #555; font-size: 0.9rem;">Course: {{ session.course }}</div>
-                    {% elif session.host.classes_teaching.all %}
-                    <div style="color: #555; font-size: 0.9rem;">Courses: {{ session.host.classes_teaching.all|join:", " }}</div>
+                    <div style="color: #555; font-size: 0.9rem;">Course: {{ session.course.code }} - {{ session.course.name }}</div>
                     {% endif %}
                 </div>
                 <div style="text-align: right; color: #003057; font-weight: 600;">
@@ -34,14 +32,16 @@
                 </div>
             </div>
             {% if session.location %}
-            <div style="margin-top: 0.5rem; color: #2e7d32; font-weight: 600;">📍 {{ session.location.name }}</div>
+            <div style="margin-top: 0.5rem; color: #2e7d32; font-weight: 600;">
+                📍 {{ session.location }}{% if session.room_number %} ({{ session.room_number }}){% endif %}
+            </div>
             {% endif %}
             {% if session.description %}
             <p style="margin-top: 0.75rem; color: #555; white-space: pre-wrap;">{{ session.description }}</p>
             {% endif %}
 
             <div style="margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
-                {% if user == session.host.user %}
+                {% if user == session.host %}
                 <a href="{% url 'study_sessions:manage_requests' session.id %}"
                     style="display: inline-block; background: #003057; color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
                     Manage Requests
@@ -77,7 +77,7 @@
     <div
         style="background: white; padding: 2rem; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h3 style="color: #003057; margin-bottom: 0.5rem;">No upcoming sessions</h3>
-        <p style="color: #666;">Check back soon for new TA study sessions.</p>
+        <p style="color: #666;">Check back soon for new study sessions.</p>
         {% if can_post %}
         <a href="{% url 'study_sessions:session_create' %}"
             style="background: #003057; color: white; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 500;">Post

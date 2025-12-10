@@ -2,23 +2,22 @@ from django.test import TestCase, Client
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.urls import reverse
-from accounts.models import TAProfile, StudentProfile
-from locations.models import Location
+from accounts.models import StudentProfile
+from .models import StudySession, SessionEnrollment
 from .models import StudySession, SessionEnrollment
 
 class SessionListStatusTest(TestCase):
     def setUp(self):
         self.client = Client()
         
-        # Create TA and Session
-        self.ta_user = User.objects.create_user(username='ta', password='password')
-        self.ta_profile = TAProfile.objects.create(user=self.ta_user, name="TA Name")
-        self.location = Location.objects.create(name="Library", building_name="Lib Building")
+        # Create Host User
+        self.host_user = User.objects.create_user(username='host', password='password')
         
         self.session = StudySession.objects.create(
-            host=self.ta_profile,
+            host=self.host_user,
             title="Review Session",
-            location=self.location,
+            location="Library",
+            room_number="304",
             start_time=timezone.now() + timezone.timedelta(hours=1),
             end_time=timezone.now() + timezone.timedelta(hours=2)
         )

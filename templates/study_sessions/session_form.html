@@ -3,15 +3,17 @@
 {% block title %}Post Study Session - StudyIt{% endblock %}
 
 {% block content %}
-<div style="max-width: 700px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<div
+    style="max-width: 700px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <h1 style="color: #003057; margin-bottom: 1rem;">Post a Study Session</h1>
 
     {% if messages %}
-        {% for message in messages %}
-            <div style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% for message in messages %}
+    <div
+        style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
     {% endif %}
 
     <form method="post">
@@ -35,10 +37,17 @@
                 {{ form.description }}
                 {{ form.description.errors }}
             </div>
-            <div>
-                <label style="display: block; font-weight: 600; color: #003057;">Location</label>
-                {{ form.location }}
-                {{ form.location.errors }}
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; color: #003057;">Location</label>
+                    {{ form.location }}
+                    {{ form.location.errors }}
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; color: #003057;">Room Number</label>
+                    {{ form.room_number }}
+                    {{ form.room_number.errors }}
+                </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div>
@@ -59,10 +68,12 @@
         </div>
 
         <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
-            <button type="submit" style="background: #003057; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Post Session</button>
-            <a href="{% url 'study_sessions:session_list' %}" style="padding: 0.75rem 1.5rem; border-radius: 6px; border: 1px solid #ddd; text-decoration: none; color: #333;">Cancel</a>
+            <button type="submit"
+                style="background: #003057; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Post
+                Session</button>
+            <a href="{% url 'study_sessions:session_list' %}"
+                style="padding: 0.75rem 1.5rem; border-radius: 6px; border: 1px solid #ddd; text-decoration: none; color: #333;">Cancel</a>
         </div>
     </form>
 </div>
 {% endblock %}
-

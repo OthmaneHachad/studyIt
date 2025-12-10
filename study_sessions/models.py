@@ -8,20 +8,15 @@ class StudySession(models.Model):
     """Study session posted by a TA/Session host."""
 
     host = models.ForeignKey(
-        TAProfile,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="study_sessions",
-        help_text="TA or session host for this session",
+        help_text="User hosting this session",
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    location = models.ForeignKey(
-        Location,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="study_sessions",
-    )
+    location = models.CharField(max_length=200, help_text="e.g. Library, Student Center")
+    room_number = models.CharField(max_length=50, blank=True, help_text="e.g. 304, Cubicle B")
     course = models.ForeignKey(
         "accounts.Class",
         on_delete=models.SET_NULL,
