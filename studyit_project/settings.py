@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -178,3 +179,7 @@ LOGOUT_REDIRECT_URL = "home"
 #         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
 #     ],
 # }
+
+# Daily.co Video API Configuration
+DAILY_API_KEY = config('DAILY_API_KEY', default='')
+DAILY_API_BASE_URL = 'https://api.daily.co/v1'
