@@ -1199,25 +1199,31 @@
     // Auto-join if coming from Calls page
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('auto_join') === 'true') {
-        console.log('Auto-join triggered from Calls page');
+        console.log('Redirected from Calls page - will show join button when call state is ready');
 
-        // Wait a bit for WebSocket to connect, then trigger join
+        // Wait for call state to be established, then show join button
         setTimeout(() => {
-            // If there's a pending incoming call, accept it
+            console.log('Checking call state - activeCallInRoom:', activeCallInRoom, 'pendingIncomingCall:', !!pendingIncomingCall);
+
+            // If there's a pending incoming call, show the modal
             if (pendingIncomingCall) {
-                console.log('Auto-joining pending call');
-                acceptIncomingCall();
+                console.log('Pending call found, showing incoming call modal');
+                incomingCallModal.classList.add('active');
             }
-            // If there's an active call in room, trigger join
-            else if (activeCallInRoom && joinCallBtn.style.display !== 'none') {
-                console.log('Auto-joining active call');
-                joinActiveCall();
+            // If there's an active call, show the join button
+            else if (activeCallInRoom) {
+                console.log('Active call detected, showing join button');
+                joinCallBtn.style.display = 'flex';
+                joinCallBtn.textContent = `📞 Join ${currentCallType || 'Audio'} Call`;
+                audioCallBtn.style.display = 'none';
+                videoCallBtn.style.display = 'none';
             }
             // Otherwise show message
             else {
-                alert('Call may have ended. Please check the chat for the join button.');
+                console.log('No active call found');
+                alert('Call may have ended. Please start a new call.');
             }
-        }, 1500); // Wait 1.5 seconds for everything to load
+        }, 2000); // Wait 2 seconds for call state to load
     }
 
     // Start a call
@@ -1304,6 +1310,8 @@
 
     // Handle incoming call
     function handleIncomingCall(data) {
+        console.log('handleIncomingCall called with data:', data);
+
         currentCallType = data.call_type;
         isCallInitiator = false;
         activeCallInRoom = true;
@@ -1316,6 +1324,8 @@
             call_type: data.call_type
         };
 
+        console.log('Stored pendingIncomingCall:', pendingIncomingCall);
+
         // Show incoming call modal
         document.getElementById('caller-name').textContent = data.caller_name;
         document.getElementById('call-type-text').textContent =
@@ -1323,7 +1333,7 @@
         incomingCallModal.classList.add('active');
 
         // Show notification banner at top
-        callNotificationText.textContent = `📞 Incoming ${data.call_type} call from ${data.caller_name}`;
+        callNotificationText.textContent = `📞 Incoming call from ${data.caller_name}...`;
         callNotificationBanner.style.display = 'block';
 
         // Also show active call banner (for persistent join option)
@@ -1333,6 +1343,8 @@
         // ALSO show the Join Call button (in case they close the modal)
         joinCallBtn.style.display = 'flex';
         joinCallBtn.textContent = `📞 Join ${data.call_type === 'video' ? 'Video' : 'Audio'} Call`;
+
+        console.log('Join button should now be visible');
 
         // Hide the start call buttons while there's a pending call
         audioCallBtn.style.display = 'none';
