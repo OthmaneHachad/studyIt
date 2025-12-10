@@ -954,17 +954,11 @@ chatForm.addEventListener('submit', function(e) {
             pendingMessageIds.delete(messageText);
             lastMessageTimestamp = data.timestamp;
             
-            // Also try to send via WebSocket if connected (for real-time delivery to other user)
-            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                try {
-                    chatSocket.send(JSON.stringify({
-                        'message': messageText,
-                        'username': '{{ user.username }}'
-                    }));
-                } catch (error) {
-                    console.log('WebSocket send failed, but message saved via HTTP:', error);
-                }
-            }
+            pendingMessageIds.delete(messageText);
+            lastMessageTimestamp = data.timestamp;
+            
+            // WebSocket send removed to prevent duplicate messages
+            // The view already broadcasts the message to the group upon saving
         } else {
             // Error occurred, remove optimistic message
             alert('Error: ' + (data.error || 'Failed to send message'));

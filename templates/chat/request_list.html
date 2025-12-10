@@ -10,117 +10,134 @@
             Browse Students →
         </a>
     </div>
-    
+
     {% if messages %}
-        {% for message in messages %}
-            <div style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% for message in messages %}
+    <div
+        style="padding: 0.75rem; margin-bottom: 1rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% elif message.tags == 'success' %}background: #d4edda; color: #155724;{% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
     {% endif %}
-    
+
     <!-- Filter Tabs -->
     <div style="margin-bottom: 2rem; border-bottom: 2px solid #eee;">
-        <a href="?status=all" style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'all' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'all' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
+        <a href="?status=all"
+            style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'all' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'all' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
             All
         </a>
-        <a href="?status=pending" style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'pending' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'pending' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
+        <a href="?status=pending"
+            style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'pending' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'pending' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
             Pending
         </a>
-        <a href="?status=accepted" style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'accepted' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'accepted' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
+        <a href="?status=accepted"
+            style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; color: {% if status_filter == 'accepted' %}#003057{% else %}#666{% endif %}; border-bottom: {% if status_filter == 'accepted' %}2px solid #003057{% else %}2px solid transparent{% endif %}; margin-bottom: -2px;">
             Accepted
         </a>
     </div>
-    
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
         <!-- Received Requests -->
         <div>
             <h2 style="color: #003057; margin-bottom: 1rem; font-size: 1.3rem;">Received Requests</h2>
             {% if received_requests %}
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    {% for request in received_requests %}
-                        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid {% if request.status == 'pending' %}#ffc107{% elif request.status == 'accepted' %}#28a745{% elif request.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
-                                <div>
-                                    <strong style="color: #003057; font-size: 1.1rem;">From: {{ request.sender.name }}</strong>
-                                    <div style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
-                                        <a href="{% url 'accounts:profile_detail' request.sender.user.id %}" style="color: #003057; text-decoration: none;">View Profile →</a>
-                                    </div>
-                                </div>
-                                <span style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; font-weight: 500; background: {% if request.status == 'pending' %}#fff3cd{% elif request.status == 'accepted' %}#d4edda{% elif request.status == 'rejected' %}#f8d7da{% else %}#e9ecef{% endif %}; color: {% if request.status == 'pending' %}#856404{% elif request.status == 'accepted' %}#155724{% elif request.status == 'rejected' %}#721c24{% else %}#495057{% endif %};">
-                                    {{ request.get_status_display }}
-                                </span>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for request in received_requests %}
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid {% if request.status == 'pending' %}#ffc107{% elif request.status == 'accepted' %}#28a745{% elif request.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong style="color: #003057; font-size: 1.1rem;">From: {{ request.sender.name }}</strong>
+                            <div style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                                <a href="{% url 'accounts:profile_detail' request.sender.user.id %}"
+                                    style="color: #003057; text-decoration: none;">View Profile →</a>
                             </div>
-                            
-                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
-                                <strong style="color: #333; display: block; margin-bottom: 0.5rem;">Message:</strong>
-                                <p style="color: #666; margin: 0; white-space: pre-wrap;">{{ request.message }}</p>
-                            </div>
-                            
-                            <div style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">
-                                Sent: {{ request.created_at|date:"M d, Y g:i A" }}
-                            </div>
-                            
-                            {% if request.status == 'pending' %}
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button onclick="acceptRequest({{ request.id }})" style="flex: 1; padding: 0.75rem; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                                        ✓ Accept
-                                    </button>
-                                    <button onclick="rejectRequest({{ request.id }})" style="flex: 1; padding: 0.75rem; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                                        ✗ Reject
-                                    </button>
-                                </div>
-                            {% endif %}
                         </div>
-                    {% endfor %}
+                        <span
+                            style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; font-weight: 500; background: {% if request.status == 'pending' %}#fff3cd{% elif request.status == 'accepted' %}#d4edda{% elif request.status == 'rejected' %}#f8d7da{% else %}#e9ecef{% endif %}; color: {% if request.status == 'pending' %}#856404{% elif request.status == 'accepted' %}#155724{% elif request.status == 'rejected' %}#721c24{% else %}#495057{% endif %};">
+                            {{ request.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                        <strong style="color: #333; display: block; margin-bottom: 0.5rem;">Message:</strong>
+                        <p style="color: #666; margin: 0; white-space: pre-wrap;">{{ request.message }}</p>
+                    </div>
+
+                    <div style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">
+                        Sent: {{ request.created_at|date:"M d, Y g:i A" }}
+                    </div>
+
+                    {% if request.status == 'pending' %}
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="action-btn accept-btn" data-id="{{ request.id }}"
+                            style="flex: 1; padding: 0.75rem; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                            ✓ Accept
+                        </button>
+                        <button type="button" class="action-btn reject-btn" data-id="{{ request.id }}"
+                            style="flex: 1; padding: 0.75rem; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                            ✗ Reject
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; color: #999;">
-                    <p>No received requests{% if status_filter != 'all' %} with status "{{ status_filter }}"{% endif %}.</p>
-                </div>
+            <div
+                style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; color: #999;">
+                <p>No received requests{% if status_filter != 'all' %} with status "{{ status_filter }}"{% endif %}.</p>
+            </div>
             {% endif %}
         </div>
-        
+
         <!-- Sent Requests -->
         <div>
             <h2 style="color: #003057; margin-bottom: 1rem; font-size: 1.3rem;">Sent Requests</h2>
             {% if sent_requests %}
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    {% for request in sent_requests %}
-                        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid {% if request.status == 'pending' %}#ffc107{% elif request.status == 'accepted' %}#28a745{% elif request.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
-                                <div>
-                                    <strong style="color: #003057; font-size: 1.1rem;">To: {{ request.recipient.name }}</strong>
-                                    <div style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
-                                        <a href="{% url 'accounts:profile_detail' request.recipient.user.id %}" style="color: #003057; text-decoration: none;">View Profile →</a>
-                                    </div>
-                                </div>
-                                <span style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; font-weight: 500; background: {% if request.status == 'pending' %}#fff3cd{% elif request.status == 'accepted' %}#d4edda{% elif request.status == 'rejected' %}#f8d7da{% else %}#e9ecef{% endif %}; color: {% if request.status == 'pending' %}#856404{% elif request.status == 'accepted' %}#155724{% elif request.status == 'rejected' %}#721c24{% else %}#495057{% endif %};">
-                                    {{ request.get_status_display }}
-                                </span>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for request in sent_requests %}
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid {% if request.status == 'pending' %}#ffc107{% elif request.status == 'accepted' %}#28a745{% elif request.status == 'rejected' %}#dc3545{% else %}#6c757d{% endif %};">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong style="color: #003057; font-size: 1.1rem;">To: {{ request.recipient.name }}</strong>
+                            <div style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                                <a href="{% url 'accounts:profile_detail' request.recipient.user.id %}"
+                                    style="color: #003057; text-decoration: none;">View Profile →</a>
                             </div>
-                            
-                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
-                                <strong style="color: #333; display: block; margin-bottom: 0.5rem;">Message:</strong>
-                                <p style="color: #666; margin: 0; white-space: pre-wrap;">{{ request.message }}</p>
-                            </div>
-                            
-                            <div style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">
-                                Sent: {{ request.created_at|date:"M d, Y g:i A" }}
-                            </div>
-                            
-                            {% if request.status == 'pending' %}
-                                <button onclick="cancelRequest({{ request.id }})" style="width: 100%; padding: 0.75rem; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
-                                    Cancel Request
-                                </button>
-                            {% endif %}
                         </div>
-                    {% endfor %}
+                        <span
+                            style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; font-weight: 500; background: {% if request.status == 'pending' %}#fff3cd{% elif request.status == 'accepted' %}#d4edda{% elif request.status == 'rejected' %}#f8d7da{% else %}#e9ecef{% endif %}; color: {% if request.status == 'pending' %}#856404{% elif request.status == 'accepted' %}#155724{% elif request.status == 'rejected' %}#721c24{% else %}#495057{% endif %};">
+                            {{ request.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                        <strong style="color: #333; display: block; margin-bottom: 0.5rem;">Message:</strong>
+                        <p style="color: #666; margin: 0; white-space: pre-wrap;">{{ request.message }}</p>
+                    </div>
+
+                    <div style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">
+                        Sent: {{ request.created_at|date:"M d, Y g:i A" }}
+                    </div>
+
+                    {% if request.status == 'pending' %}
+                    <button type="button" class="action-btn cancel-btn" data-id="{{ request.id }}"
+                        style="width: 100%; padding: 0.75rem; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                        Cancel Request
+                    </button>
+                    {% endif %}
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; color: #999;">
-                    <p>No sent requests{% if status_filter != 'all' %} with status "{{ status_filter }}"{% endif %}.</p>
-                </div>
+            <div
+                style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; color: #999;">
+                <p>No sent requests{% if status_filter != 'all' %} with status "{{ status_filter }}"{% endif %}.</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -129,97 +146,116 @@
 
 {% block extra_js %}
 <script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    document.addEventListener('DOMContentLoaded', function () {
+        // Prevent default on all action buttons just in case
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const requestId = this.dataset.id;
+
+                if (this.classList.contains('accept-btn')) {
+                    handleAcceptRequest(requestId);
+                } else if (this.classList.contains('reject-btn')) {
+                    handleRejectRequest(requestId);
+                } else if (this.classList.contains('cancel-btn')) {
+                    handleCancelRequest(requestId);
+                }
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 
-function acceptRequest(requestId) {
-    if (!confirm('Accept this chat request?')) return;
-    
-    fetch(`/chat/requests/accept/${requestId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            // Redirect to chat room if room_name is provided
-            if (data.room_name) {
-                window.location.href = `/chat/rooms/${data.room_name}/`;
-            } else {
-                location.reload();
+    function handleAcceptRequest(requestId) {
+        if (!confirm('Accept this chat request?')) return;
+
+        fetch(`/chat/requests/accept/${requestId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
             }
-        } else {
-            alert('Error: ' + (data.error || 'Failed to accept request'));
-        }
-    })
-    .catch(error => {
-        alert('An error occurred while accepting the request.');
-    });
-}
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to chat room if room_name is provided
+                    if (data.room_name) {
+                        window.location.href = `/chat/rooms/${data.room_name}/`;
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to accept request'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while accepting the request.');
+            });
+    }
 
-function rejectRequest(requestId) {
-    if (!confirm('Reject this chat request?')) return;
-    
-    fetch(`/chat/requests/reject/${requestId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to reject request'));
-        }
-    })
-    .catch(error => {
-        alert('An error occurred while rejecting the request.');
-    });
-}
+    function handleRejectRequest(requestId) {
+        if (!confirm('Reject this chat request?')) return;
 
-function cancelRequest(requestId) {
-    if (!confirm('Cancel this chat request?')) return;
-    
-    fetch(`/chat/requests/cancel/${requestId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to cancel request'));
-        }
-    })
-    .catch(error => {
-        alert('An error occurred while cancelling the request.');
-    });
-}
+        fetch(`/chat/requests/reject/${requestId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to reject request'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while rejecting the request.');
+            });
+    }
+
+    function handleCancelRequest(requestId) {
+        if (!confirm('Cancel this chat request?')) return;
+
+        fetch(`/chat/requests/cancel/${requestId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to cancel request'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the request.');
+            });
+    }
 </script>
 {% endblock %}
-
