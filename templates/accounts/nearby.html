@@ -2,81 +2,414 @@
 
 {% block title %}Nearby Classmates - StudyIt{% endblock %}
 
+{% block extra_css %}
+<style>
+    .nearby-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .nearby-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .nearby-header h1 {
+        color: #003057;
+        margin: 0;
+    }
+    
+    .edit-profile-btn {
+        background: #003057;
+        color: white;
+        padding: 0.6rem 1.2rem;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    
+    .edit-profile-btn:hover {
+        background: #002040;
+    }
+    
+    .location-banner {
+        background: linear-gradient(135deg, #003057 0%, #004d8c 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .location-icon {
+        font-size: 2rem;
+    }
+    
+    .location-info h3 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    
+    .location-info p {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .no-location-warning {
+        padding: 1.25rem;
+        border: 2px solid #ffc107;
+        background: #fff3cd;
+        color: #664d03;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .no-location-warning a {
+        color: #003057;
+        font-weight: 600;
+        margin-left: 0.25rem;
+    }
+    
+    /* Summary Cards */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .summary-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        text-align: center;
+        border-left: 4px solid #003057;
+    }
+    
+    .summary-card.highlight {
+        background: linear-gradient(135deg, #e8f4fd 0%, #d4e8f7 100%);
+        border-left-color: #28a745;
+    }
+    
+    .summary-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #003057;
+        line-height: 1;
+    }
+    
+    .summary-label {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    
+    /* Counts Section */
+    .counts-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        color: #003057;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .class-counts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+    
+    .class-count-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem;
+        background: #f8fafc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .class-count-card:hover {
+        border-color: #003057;
+        background: #f0f7ff;
+    }
+    
+    .class-count-card.has-students {
+        border-left: 4px solid #28a745;
+    }
+    
+    .class-info .class-code {
+        font-weight: 700;
+        color: #003057;
+        font-size: 1.1rem;
+    }
+    
+    .class-info .class-name {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.1rem;
+    }
+    
+    .class-count-badge {
+        background: #003057;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        min-width: 50px;
+        text-align: center;
+    }
+    
+    .class-count-badge.zero {
+        background: #e5e7eb;
+        color: #9ca3af;
+    }
+    
+    /* Classmates Section */
+    .classmates-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .class-group {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 1.25rem;
+        margin-top: 1.25rem;
+    }
+    
+    .class-group:first-child {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+    }
+    
+    .class-group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .class-group-title {
+        font-weight: 700;
+        color: #003057;
+        font-size: 1.1rem;
+    }
+    
+    .class-group-count {
+        background: #e8f4fd;
+        color: #003057;
+        padding: 0.35rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .classmates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .classmate-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .classmate-card:hover {
+        border-color: #003057;
+        box-shadow: 0 4px 12px rgba(0,48,87,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .classmate-name {
+        font-weight: 600;
+        color: #111827;
+        font-size: 1rem;
+    }
+    
+    .classmate-year {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+    
+    .classmate-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        padding: 0.35rem 0.75rem;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .action-btn.chat {
+        background: #28a745;
+        color: white;
+    }
+    
+    .empty-state {
+        color: #6b7280;
+        font-style: italic;
+        padding: 1rem;
+        text-align: center;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+    
+    @media (max-width: 640px) {
+        .nearby-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .summary-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .classmates-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width: 960px; margin: 2rem auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h1 style="color: #003057;">Nearby Classmates</h1>
-        <a href="{% url 'accounts:profile_edit' %}" style="background: #003057; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 5px; font-weight: 500;">Edit Profile</a>
+<div class="nearby-container">
+    <div class="nearby-header">
+        <h1>👥 Nearby Classmates</h1>
+        <a href="{% url 'accounts:profile_edit' %}" class="edit-profile-btn">✏️ Edit Profile</a>
     </div>
     
     {% if current_location %}
-        <div style="margin-bottom: 1rem; color: #555;">
-            <strong style="color: #003057;">Your Location:</strong>
-            <span>{{ current_location.name }}</span>
+        <div class="location-banner">
+            <span class="location-icon">📍</span>
+            <div class="location-info">
+                <h3>Your Current Location</h3>
+                <p>{{ current_location.name }}</p>
+            </div>
         </div>
-    {% else %}
-        <div style="padding: 1rem; border: 2px solid #ffc107; background: #fff3cd; color: #664d03; border-radius: 8px;">
-            Set your current location in your profile to find nearby classmates.
-            <a href="{% url 'accounts:profile_edit' %}" style="color: #003057; font-weight: 600; margin-left: 0.25rem;">Update now →</a>
-        </div>
-    {% endif %}
-    
-    {% if current_location %}
-    <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
-        <section style="background: white; padding: 1.25rem; border-radius: 10px; border: 1px solid #e5e7eb;">
-            <h2 style="color: #003057; font-size: 1.25rem; margin-bottom: 0.75rem;">Counts by Class</h2>
+        
+        <!-- Summary Statistics -->
+        {% if user_classes_data %}
+            <div class="summary-grid">
+                <div class="summary-card highlight">
+                    <div class="summary-number">{{ unique_nearby_count|default:0 }}</div>
+                    <div class="summary-label">Unique Classmates Nearby</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number">{{ user_classes_data|length }}</div>
+                    <div class="summary-label">Your Classes</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number">{{ classes_with_students|default:0 }}</div>
+                    <div class="summary-label">Classes with Nearby Students</div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Counts by Class -->
+        <section class="counts-section">
+            <h2 class="section-title">📊 Students by Class at {{ current_location.name }}</h2>
             {% if user_classes_data %}
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem;">
+                <div class="class-counts-grid">
                     {% for item in user_classes_data %}
-                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.9rem; background: #f8fafc;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div style="font-weight: 700; color: #003057;">{{ item.code }}</div>
-                                    <div style="font-size: 0.85rem; color: #6b7280;">{{ item.name }}</div>
-                                </div>
-                                <div style="font-weight: 700; color: #003057; font-size: 1.1rem;">{{ item.count }}</div>
+                        <div class="class-count-card {% if item.count > 0 %}has-students{% endif %}">
+                            <div class="class-info">
+                                <div class="class-code">{{ item.code }}</div>
+                                <div class="class-name">{{ item.name|truncatewords:5 }}</div>
+                            </div>
+                            <div class="class-count-badge {% if item.count == 0 %}zero{% endif %}">
+                                {{ item.count }}
                             </div>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div style="color: #6b7280;">You have no classes added. Add classes to see nearby classmates.</div>
+                <div class="empty-state">
+                    You have no classes added. <a href="{% url 'accounts:profile_edit' %}">Add classes</a> to see nearby classmates.
+                </div>
             {% endif %}
         </section>
         
-        <section style="background: white; padding: 1.25rem; border-radius: 10px; border: 1px solid #e5e7eb;">
-            <h2 style="color: #003057; font-size: 1.25rem; margin-bottom: 0.75rem;">Classmates by Class</h2>
+        <!-- Classmates by Class -->
+        <section class="classmates-section">
+            <h2 class="section-title">🎓 Your Classmates Here</h2>
             {% if user_classes_data %}
                 {% for item in user_classes_data %}
-                    <div style="border-top: 1px solid #e5e7eb; padding-top: 1rem; margin-top: 1rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <div style="font-weight: 700; color: #003057;">{{ item.code }}</div>
-                            <div style="color: #6b7280; font-size: 0.9rem;">{{ item.count }} nearby</div>
+                    <div class="class-group">
+                        <div class="class-group-header">
+                            <span class="class-group-title">{{ item.code }} - {{ item.name }}</span>
+                            <span class="class-group-count">{{ item.count }} student{{ item.count|pluralize }} nearby</span>
                         </div>
                         {% if item.members %}
-                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
+                            <div class="classmates-grid">
                                 {% for p in item.members %}
-                                    <a href="{% url 'accounts:profile_detail' p.user.id %}" style="display: block; text-decoration: none; color: inherit;">
-                                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.9rem;">
-                                            <div style="font-weight: 600; color: #111827;">{{ p.name }}</div>
-                                            <div style="color: #6b7280; font-size: 0.9rem;">{{ p.get_year_display }}</div>
+                                    <a href="{% url 'accounts:profile_detail' p.user.id %}" class="classmate-card">
+                                        <div class="classmate-name">{{ p.name }}</div>
+                                        <div class="classmate-year">{{ p.get_year_display }}</div>
+                                        <div class="classmate-actions">
+                                            <span class="action-btn chat">💬 Chat</span>
                                         </div>
                                     </a>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <div style="color: #6b7280; font-size: 0.95rem;">No visible classmates nearby for this class.</div>
+                            <div class="empty-state">No classmates visible at your location for this class.</div>
                         {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
-                <div style="color: #6b7280;">No classes to display.</div>
+                <div class="empty-state">No classes to display. Add classes to your profile to see nearby classmates.</div>
             {% endif %}
         </section>
-    </div>
+        
+    {% else %}
+        <div class="no-location-warning">
+            <strong>📍 Set your location!</strong><br>
+            Set your current location in your profile to find classmates studying nearby.
+            <a href="{% url 'accounts:profile_edit' %}">Update now →</a>
+        </div>
     {% endif %}
 </div>
-
 {% endblock %}
 
 {% block extra_js %}{% endblock %}

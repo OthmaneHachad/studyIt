@@ -79,6 +79,17 @@ def nearby_classmates(request):
             'members': grouped_by_class.get(code, []),
         })
     
+    # Calculate summary statistics
+    total_nearby_classmates = sum(counts_by_class.values())
+    classes_with_students = sum(1 for count in counts_by_class.values() if count > 0)
+    
+    # Get unique classmates (a student may be in multiple classes)
+    unique_classmates = set()
+    for members in grouped_by_class.values():
+        for member in members:
+            unique_classmates.add(member.id)
+    unique_nearby_count = len(unique_classmates)
+    
     return render(request, 'accounts/nearby.html', {
         'current_profile': current_profile,
         'current_location': current_location,
@@ -86,6 +97,9 @@ def nearby_classmates(request):
         'user_classes_data': user_classes_data,
         'counts_by_class': counts_by_class,
         'grouped_by_class': grouped_by_class,
+        'total_nearby_classmates': total_nearby_classmates,
+        'classes_with_students': classes_with_students,
+        'unique_nearby_count': unique_nearby_count,
     })
 
 def login_view(request):
