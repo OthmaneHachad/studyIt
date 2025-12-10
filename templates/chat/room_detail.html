@@ -406,12 +406,17 @@
     }
 
     .call-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
         background: rgba(0, 0, 0, 0.9);
         padding: 1.5rem;
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 1rem;
+        z-index: 100;
     }
 
     .call-control-btn {
@@ -463,21 +468,43 @@
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 10px;
         text-align: center;
+        color: white;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
     }
 
     .call-status {
-        font-size: 0.875rem;
-        opacity: 0.8;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
     }
 
     .call-duration {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+    }
+
+    .call-interface.minimized .call-info {
+        position: static;
+        transform: none;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 0.5rem 1rem;
+        border-radius: 0;
+    }
+
+    .call-interface.minimized .call-status {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .call-interface.minimized .call-duration {
         font-size: 1.25rem;
-        font-weight: 600;
+        letter-spacing: 1px;
     }
 </style>
 {% endblock %}
@@ -739,7 +766,7 @@
                 // Keep send button enabled - we can still send via HTTP
                 sendButton.disabled = false;
                 messageInput.disabled = false;
-                messageInput.placeholder = 'Type your message... (Real-time updates unavailable)';
+                messageInput.placeholder = 'Type your message...';
 
                 // Start polling for new messages when WebSocket is down
                 if (!pollInterval) {
@@ -764,7 +791,7 @@
             // Keep send button enabled - we can still send via HTTP
             sendButton.disabled = false;
             messageInput.disabled = false;
-            messageInput.placeholder = 'Type your message... (Real-time updates unavailable)';
+            messageInput.placeholder = 'Type your message...';
 
             const statusIndicator = document.getElementById('connection-status');
             if (statusIndicator) {
@@ -1294,12 +1321,26 @@
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
 
-            // Send offer via signaling
-            callSignalingSocket.send(JSON.stringify({
-                type: 'call_offer',
-                offer: offer,
-                call_type: callType
-            }));
+            // Wait for WebSocket to be ready before sending
+            const sendOffer = () => {
+                if (callSignalingSocket.readyState === WebSocket.OPEN) {
+                    callSignalingSocket.send(JSON.stringify({
+                        type: 'call_offer',
+                        offer: offer,
+                        call_type: callType
+                    }));
+                    console.log('Call offer sent successfully');
+                } else if (callSignalingSocket.readyState === WebSocket.CONNECTING) {
+                    console.log('WebSocket still connecting, waiting...');
+                    setTimeout(sendOffer, 100); // Retry after 100ms
+                } else {
+                    console.error('WebSocket is not connected');
+                    alert('Connection error. Please try again.');
+                    endCall();
+                }
+            };
+
+            sendOffer();
 
         } catch (error) {
             console.error('Error starting call:', error);
@@ -1488,7 +1529,9 @@
         callNotificationBanner.style.display = 'none';
 
         alert('Call ended by ' + data.ender_name);
-        endCall();
+
+        // End call without sending signal (to prevent loop)
+        endCall(true); // Pass true to skip sending end signal
     }
 
     // Handle call cancelled
@@ -1635,12 +1678,17 @@
     }
 
     // End call
-    async function endCall() {
-        // Send end signal
-        if (callSignalingSocket && callSignalingSocket.readyState === WebSocket.OPEN) {
+    async function endCall(skipSignal = false) {
+        console.log('endCall called, skipSignal:', skipSignal);
+
+        // Send end signal only if not skipping (to prevent infinite loop)
+        if (!skipSignal && callSignalingSocket && callSignalingSocket.readyState === WebSocket.OPEN) {
+            console.log('Sending call_end signal to other user');
             callSignalingSocket.send(JSON.stringify({
                 type: 'call_end'
             }));
+        } else {
+            console.log('Skipping call_end signal. skipSignal:', skipSignal, 'WebSocket state:', callSignalingSocket?.readyState);
         }
 
         // Stop local stream

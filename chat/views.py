@@ -397,6 +397,27 @@ def initiate_call(request, room_name):
     if not chat_room.has_participant(profile):
         return JsonResponse({'error': 'Access denied.'}, status=403)
     
+    # GET request - check for active calls
+    if request.method == 'GET':
+        active_call = Call.objects.filter(
+            chat_room=chat_room,
+            status__in=['initiated', 'ringing', 'accepted']
+        ).first()
+        
+        if active_call:
+            # Return info about the active call
+            return JsonResponse({
+                'active_call': {
+                    'call_id': active_call.id,
+                    'call_type': active_call.call_type,
+                    'caller_name': active_call.caller.name,
+                    'status': active_call.status
+                }
+            })
+        else:
+            return JsonResponse({'active_call': None})
+    
+    # POST request - initiate a new call
     if request.method == 'POST':
         call_type = request.POST.get('call_type', 'video')
         
