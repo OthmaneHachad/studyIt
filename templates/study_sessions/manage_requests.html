@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Requests - {{ session.title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 2rem auto;">
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'study_sessions:session_list' %}" style="color: #666; text-decoration: none;">&larr; Back to
+            Sessions</a>
+        <h1 style="color: #003057; margin-top: 0.5rem;">Manage Requests</h1>
+        <p style="color: #666; font-size: 1.1rem;">For session: <strong>{{ session.title }}</strong></p>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div
+        style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 5px; {% if message.tags == 'error' %}background: #f8d7da; color: #721c24;{% else %}background: #d4edda; color: #155724;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div style="background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+        {% if enrollments %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; text-align: left;">
+                    <th style="padding: 1rem; border-bottom: 2px solid #eee;">Student</th>
+                    <th style="padding: 1rem; border-bottom: 2px solid #eee;">Year</th>
+                    <th style="padding: 1rem; border-bottom: 2px solid #eee;">Status</th>
+                    <th style="padding: 1rem; border-bottom: 2px solid #eee;">Requested At</th>
+                    <th style="padding: 1rem; border-bottom: 2px solid #eee;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 1rem; font-weight: 500;">
+                        {{ enrollment.student.name }}
+                    </td>
+                    <td style="padding: 1rem; color: #666;">
+                        {{ enrollment.student.get_year_display }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span style="
+                                    padding: 0.25rem 0.6rem; 
+                                    border-radius: 20px; 
+                                    font-size: 0.85rem; 
+                                    font-weight: 600;
+                                    {% if enrollment.status == 'approved' %}
+                                        background: #d4edda; color: #155724;
+                                    {% elif enrollment.status == 'rejected' %}
+                                        background: #f8d7da; color: #721c24;
+                                    {% else %}
+                                        background: #ffeeba; color: #856404;
+                                    {% endif %}
+                                ">
+                            {{ enrollment.status|title }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; color: #666; font-size: 0.9rem;">
+                        {{ enrollment.created_at|date:"M d, g:i A" }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if enrollment.status == 'pending' %}
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'study_sessions:update_request' enrollment.id 'approve' %}"
+                                style="background: #2e7d32; color: white; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">Approve</a>
+                            <a href="{% url 'study_sessions:update_request' enrollment.id 'reject' %}"
+                                style="background: #dc3545; color: white; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">Reject</a>
+                        </div>
+                        {% else %}
+                        <span style="color: #999; font-size: 0.9rem;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 3rem; text-align: center; color: #666;">
+            <p>No requests found for this session.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

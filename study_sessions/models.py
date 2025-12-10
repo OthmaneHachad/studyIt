@@ -37,3 +37,38 @@ class StudySession(models.Model):
     @property
     def is_upcoming(self):
         return self.start_time >= timezone.now()
+
+
+class SessionEnrollment(models.Model):
+    """Tracks a student's request to join a study session."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    session = models.ForeignKey(
+        StudySession,
+        on_delete=models.CASCADE,
+        related_name="enrollments",
+    )
+    student = models.ForeignKey(
+        "accounts.StudentProfile",
+        on_delete=models.CASCADE,
+        related_name="session_enrollments",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ["session", "student"]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.student.name} -> {self.session.title} ({self.status})"
