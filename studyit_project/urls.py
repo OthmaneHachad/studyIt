@@ -19,7 +19,7 @@ urlpatterns = [
     path("chat/", include("chat.urls")),
     # App URLs will be included here as they're developed
     # path("locations/", include("locations.urls")),
-    # path("sessions/", include("study_sessions.urls")),
+    path("sessions/", include("study_sessions.urls")),
 ]
 
 # Serve media files in development

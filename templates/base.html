@@ -66,7 +66,7 @@
             <ul>
                 <li><a href="/">Home</a></li>
                 {% if user.is_authenticated %}
-                    <li><a href="#">Study Sessions</a></li>
+                    <li><a href="{% url 'study_sessions:session_list' %}">Study Sessions</a></li>
                     <li>
                         <a href="{% url 'chat:room_list' %}" style="position: relative;">
                             Chats
