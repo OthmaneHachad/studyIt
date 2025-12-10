@@ -33,7 +33,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",  # Must be first for ASGI support
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -41,7 +40,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third-party apps
-    "channels",  # Required for WebSocket support
     # "rest_framework",  # Temporarily commented out - install with: pip install djangorestframework==3.14.0
     # "corsheaders",  # Temporarily commented out - install with: pip install django-cors-headers==4.3.0
     # Local apps
@@ -81,7 +79,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "studyit_project.wsgi.application"
-ASGI_APPLICATION = "studyit_project.asgi.application"  # Required for WebSocket support
 
 
 # Database
@@ -144,23 +141,19 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Django Channels Configuration
-# Use InMemoryChannelLayer for development, Redis for production
-if os.environ.get('REDIS_URL'):
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [os.environ.get('REDIS_URL')],
-            },
-        },
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer"
-        }
-    }
+# Email Configuration
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@studyit.com')
+
+# Google Calendar API Configuration for Meet links
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI')
 
 # CORS Settings (for development)
 CORS_ALLOW_ALL_ORIGINS = True  # Change in production

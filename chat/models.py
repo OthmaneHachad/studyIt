@@ -202,6 +202,12 @@ class Call(models.Model):
     ended_at = models.DateTimeField(null=True, blank=True)
     duration_seconds = models.IntegerField(null=True, blank=True, help_text="Call duration in seconds")
     
+    # Google Meet integration fields
+    meet_link = models.URLField(max_length=500, null=True, blank=True, help_text="Google Meet link for the call")
+    calendar_event_id = models.CharField(max_length=255, null=True, blank=True, help_text="Google Calendar event ID")
+    email_sent = models.BooleanField(default=False, help_text="Whether notification email was sent")
+    email_sent_at = models.DateTimeField(null=True, blank=True, help_text="When notification email was sent")
+    
     class Meta:
         ordering = ['-initiated_at']
         indexes = [

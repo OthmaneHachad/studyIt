@@ -3,11 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q, Max
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+from django.utils import timezone
 from accounts.models import StudentProfile
 from .models import ChatRequest, ChatRoom, Message, Call
 from .forms import ChatRequestForm
+from .google_meet import create_google_meet_event, delete_google_meet_event
+from .email_utils import send_call_notification_email
 
 @login_required
 def send_chat_request(request, recipient_id):
@@ -301,27 +302,6 @@ def send_message(request, room_name):
         # Update room's updated_at timestamp
         chat_room.save()
         
-        # Broadcast message via WebSocket channel layer (for real-time delivery)
-        try:
-            channel_layer = get_channel_layer()
-            if channel_layer:
-                room_group_name = f'chat_{room_name}'
-                async_to_sync(channel_layer.group_send)(
-                    room_group_name,
-                    {
-                        'type': 'chat_message',
-                        'message': message_content,
-                        'username': request.user.username,
-                        'sender_name': profile.name,
-                        'sender_id': profile.id,
-                        'timestamp': message.timestamp.isoformat(),
-                        'message_id': message.id,
-                    }
-                )
-        except Exception as e:
-            # If channel layer fails, message is still saved - just log the error
-            print(f"Failed to broadcast message via WebSocket: {e}")
-        
         return JsonResponse({
             'success': True,
             'message_id': message.id,
@@ -426,7 +406,8 @@ def initiate_call(request, room_name):
                     'call_id': active_call.id,
                     'call_type': active_call.call_type,
                     'caller_name': active_call.caller.name,
-                    'status': active_call.status
+                    'status': active_call.status,
+                    'meet_link': active_call.meet_link
                 }
             })
         else:
@@ -434,54 +415,107 @@ def initiate_call(request, room_name):
     
     # POST request - initiate a new call
     if request.method == 'POST':
-        from django.utils import timezone
-        from datetime import timedelta
+        print("\n" + "="*60)
+        print("INITIATE_CALL - POST REQUEST RECEIVED")
+        print("="*60)
         
-        call_type = request.POST.get('call_type', 'video')
-        
-        if call_type not in ['audio', 'video']:
-            return JsonResponse({'error': 'Invalid call type.'}, status=400)
-        
-        # Get the other participant
-        other_participant = chat_room.get_other_participant(profile)
-        
-        # Clean up stale calls before checking for active ones
-        stale_threshold = timezone.now() - timedelta(minutes=5)
-        stale_calls = Call.objects.filter(
-            chat_room=chat_room,
-            status__in=['initiated', 'ringing'],
-            initiated_at__lt=stale_threshold
-        )
-        for stale_call in stale_calls:
-            stale_call.status = 'missed'
-            stale_call.ended_at = timezone.now()
-            stale_call.save()
-        
-        # Check if there's already an active call in this room
-        active_call = Call.objects.filter(
-            chat_room=chat_room,
-            status__in=['initiated', 'ringing', 'accepted']
-        ).first()
-        
-        if active_call:
-            return JsonResponse({'error': 'There is already an active call in this room.'}, status=400)
-        
-        # Create the call
-        call = Call.objects.create(
-            caller=profile,
-            receiver=other_participant,
-            chat_room=chat_room,
-            call_type=call_type,
-            status='initiated'
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'call_id': call.id,
-            'call_type': call_type,
-            'receiver_name': other_participant.name,
-            'message': f'{call_type.capitalize()} call initiated'
-        })
+        try:
+            from datetime import timedelta
+            print("✓ Imports successful")
+            
+            call_type = request.POST.get('call_type', 'video')
+            print(f"✓ Call type: {call_type}")
+            
+            if call_type not in ['audio', 'video']:
+                print("✗ Invalid call type")
+                return JsonResponse({'error': 'Invalid call type.'}, status=400)
+            
+            # Get the other participant
+            print(f"✓ Getting other participant for room: {chat_room.room_name}")
+            other_participant = chat_room.get_other_participant(profile)
+            print(f"✓ Other participant: {other_participant.name}")
+            
+            # Clean up stale calls before checking for active ones
+            stale_threshold = timezone.now() - timedelta(minutes=5)
+            stale_calls = Call.objects.filter(
+                chat_room=chat_room,
+                status__in=['initiated', 'ringing'],
+                initiated_at__lt=stale_threshold
+            )
+            for stale_call in stale_calls:
+                stale_call.status = 'missed'
+                stale_call.ended_at = timezone.now()
+                stale_call.save()
+            
+            # Check if there's already an active call in this room
+            active_call = Call.objects.filter(
+                chat_room=chat_room,
+                status__in=['initiated', 'ringing', 'accepted']
+            ).first()
+            
+            if active_call:
+                return JsonResponse({'error': 'There is already an active call in this room.'}, status=400)
+            
+            # Create Google Meet event
+            try:
+                meet_data = create_google_meet_event(
+                    caller_name=profile.name,
+                    caller_email=profile.user.email,
+                    receiver_name=other_participant.name,
+                    receiver_email=other_participant.user.email,
+                    call_type=call_type
+                )
+            except Exception as e:
+                import traceback
+                print(f"Error creating Meet event: {e}")
+                print(traceback.format_exc())
+                return JsonResponse({'error': f'Failed to create Google Meet link: {str(e)}'}, status=500)
+            
+            if not meet_data:
+                return JsonResponse({'error': 'Failed to create Google Meet link.'}, status=500)
+            
+            # Create the call with Meet link
+            try:
+                call = Call.objects.create(
+                    caller=profile,
+                    receiver=other_participant,
+                    chat_room=chat_room,
+                    call_type=call_type,
+                    status='initiated',
+                    meet_link=meet_data.get('meet_link'),
+                    calendar_event_id=meet_data.get('event_id')
+                )
+            except Exception as e:
+                import traceback
+                print(f"Error creating Call object: {e}")
+                print(traceback.format_exc())
+                return JsonResponse({'error': f'Failed to create call: {str(e)}'}, status=500)
+            
+            # Send email notification to receiver
+            try:
+                email_sent = send_call_notification_email(call, notification_type='initiated')
+            except Exception as e:
+                import traceback
+                print(f"Error sending email: {e}")
+                print(traceback.format_exc())
+                # Don't fail the whole request if email fails
+                email_sent = False
+            
+            return JsonResponse({
+                'success': True,
+                'call_id': call.id,
+                'call_type': call_type,
+                'receiver_name': other_participant.name,
+                'meet_link': call.meet_link,
+                'email_sent': email_sent,
+                'message': f'{call_type.capitalize()} call initiated. Email sent to {other_participant.name}.'
+            })
+            
+        except Exception as e:
+            import traceback
+            print(f"Unexpected error in initiate_call: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
     
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
@@ -541,15 +575,18 @@ def accept_call(request, call_id):
     
     if request.method == 'POST':
         if call.can_be_answered():
-            from django.utils import timezone
             call.status = 'accepted'
             call.accepted_at = timezone.now()
             call.save()
             
+            # Send email notification to caller
+            send_call_notification_email(call, notification_type='accepted')
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Call accepted',
-                'call_id': call.id
+                'call_id': call.id,
+                'meet_link': call.meet_link
             })
         else:
             return JsonResponse({'error': 'Call cannot be answered.'}, status=400)
@@ -572,10 +609,16 @@ def reject_call(request, call_id):
     
     if request.method == 'POST':
         if call.can_be_answered():
-            from django.utils import timezone
             call.status = 'rejected'
             call.ended_at = timezone.now()
             call.save()
+            
+            # Delete the Google Calendar event
+            if call.calendar_event_id:
+                delete_google_meet_event(call.calendar_event_id)
+            
+            # Send email notification to caller
+            send_call_notification_email(call, notification_type='rejected')
             
             return JsonResponse({
                 'success': True,
@@ -602,10 +645,16 @@ def cancel_call(request, call_id):
     
     if request.method == 'POST':
         if call.can_be_answered():
-            from django.utils import timezone
             call.status = 'cancelled'
             call.ended_at = timezone.now()
             call.save()
+            
+            # Delete the Google Calendar event
+            if call.calendar_event_id:
+                delete_google_meet_event(call.calendar_event_id)
+            
+            # Send email notification to receiver
+            send_call_notification_email(call, notification_type='cancelled')
             
             return JsonResponse({
                 'success': True,
