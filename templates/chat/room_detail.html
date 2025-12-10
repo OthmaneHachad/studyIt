@@ -1199,39 +1199,31 @@
     // Auto-join if coming from Calls page
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('auto_join') === 'true') {
-        console.log('Auto-join triggered from Calls page');
+        console.log('Redirected from Calls page - will show join button when call state is ready');
 
-        // Wait longer for WebSocket to connect and call state to be established
+        // Wait for call state to be established, then show join button
         setTimeout(() => {
-            console.log('Auto-join check - activeCallInRoom:', activeCallInRoom, 'pendingIncomingCall:', !!pendingIncomingCall);
+            console.log('Checking call state - activeCallInRoom:', activeCallInRoom, 'pendingIncomingCall:', !!pendingIncomingCall);
 
-            // If there's a pending incoming call, accept it
+            // If there's a pending incoming call, show the modal
             if (pendingIncomingCall) {
-                console.log('Auto-joining pending call');
-                acceptIncomingCall();
+                console.log('Pending call found, showing incoming call modal');
+                incomingCallModal.classList.add('active');
             }
-            // If there's an active call in room, show join button and trigger join
+            // If there's an active call, show the join button
             else if (activeCallInRoom) {
-                console.log('Active call detected, ensuring join button is visible');
-
-                // Make sure join button is visible
+                console.log('Active call detected, showing join button');
                 joinCallBtn.style.display = 'flex';
                 joinCallBtn.textContent = `📞 Join ${currentCallType || 'Audio'} Call`;
-
-                // Hide start call buttons
                 audioCallBtn.style.display = 'none';
                 videoCallBtn.style.display = 'none';
-
-                // Trigger join
-                console.log('Auto-joining active call');
-                joinActiveCall();
             }
             // Otherwise show message
             else {
                 console.log('No active call found');
                 alert('Call may have ended. Please start a new call.');
             }
-        }, 2000); // Wait 2 seconds for everything to load
+        }, 2000); // Wait 2 seconds for call state to load
     }
 
     // Start a call
