@@ -8,9 +8,10 @@ class StudySessionForm(forms.ModelForm):
 
     class Meta:
         model = StudySession
-        fields = ["title", "description", "location", "start_time", "end_time", "is_active"]
+        fields = ["title", "course", "description", "location", "start_time", "end_time", "is_active"]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g., CS2340 Exam Review"}),
+            "course": forms.Select(attrs={"class": "form-control"}),
             "description": forms.Textarea(
                 attrs={
                     "class": "form-control",

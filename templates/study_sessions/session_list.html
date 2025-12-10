@@ -22,9 +22,10 @@
                 <div>
                     <h2 style="margin: 0; color: #003057;">{{ session.title }}</h2>
                     <p style="margin: 0.25rem 0; color: #666; font-size: 0.95rem;">Hosted by {{ session.host.name }}</p>
-                    {% if session.host.classes_teaching.all %}
-                    <div style="color: #555; font-size: 0.9rem;">Courses: {{ session.host.classes_teaching.all|join:", "
-                        }}</div>
+                    {% if session.course %}
+                    <div style="color: #555; font-size: 0.9rem;">Course: {{ session.course }}</div>
+                    {% elif session.host.classes_teaching.all %}
+                    <div style="color: #555; font-size: 0.9rem;">Courses: {{ session.host.classes_teaching.all|join:", " }}</div>
                     {% endif %}
                 </div>
                 <div style="text-align: right; color: #003057; font-weight: 600;">

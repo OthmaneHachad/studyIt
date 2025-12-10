@@ -23,6 +23,14 @@
                 {{ form.title.errors }}
             </div>
             <div>
+                <label style="display: block; font-weight: 600; color: #003057;">Course (optional)</label>
+                {{ form.course }}
+                {{ form.course.errors }}
+                <div style="color: #777; font-size: 0.85rem; margin-top: 0.25rem;">
+                    Select one of your classes to label this session.
+                </div>
+            </div>
+            <div>
                 <label style="display: block; font-weight: 600; color: #003057;">Description</label>
                 {{ form.description }}
                 {{ form.description.errors }}

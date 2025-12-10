@@ -22,6 +22,14 @@ class StudySession(models.Model):
         blank=True,
         related_name="study_sessions",
     )
+    course = models.ForeignKey(
+        "accounts.Class",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="study_sessions",
+        help_text="Optional: Label this session with a specific class/course",
+    )
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     is_active = models.BooleanField(default=True)

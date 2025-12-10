@@ -53,6 +53,9 @@ def session_create(request):
 
     if request.method == "POST":
         form = StudySessionForm(request.POST)
+        # Limit course choices to TA's classes
+        if "course" in form.fields:
+            form.fields["course"].queryset = ta_profile.classes_teaching.all()
         if form.is_valid():
             session = form.save(commit=False)
             session.host = ta_profile
@@ -61,6 +64,8 @@ def session_create(request):
             return redirect("study_sessions:session_list")
     else:
         form = StudySessionForm()
+        if "course" in form.fields:
+            form.fields["course"].queryset = ta_profile.classes_teaching.all()
 
     return render(request, "study_sessions/session_form.html", {"form": form})
 
