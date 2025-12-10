@@ -180,6 +180,4 @@ LOGOUT_REDIRECT_URL = "home"
 #     ],
 # }
 
-# Daily.co Video API Configuration
-DAILY_API_KEY = config('DAILY_API_KEY', default='')
-DAILY_API_BASE_URL = 'https://api.daily.co/v1'
+

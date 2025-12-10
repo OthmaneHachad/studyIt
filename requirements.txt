@@ -24,6 +24,10 @@ python-decouple==3.8
 Pillow==10.1.0
 requests==2.31.0
 
+gunicorn
+whitenoise
+psycopg2-binary
+
 # Development & Testing
 pytest==7.4.3
 pytest-django==4.7.0
